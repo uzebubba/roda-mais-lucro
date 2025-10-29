@@ -1,17 +1,59 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getTransactions, Transaction } from "@/lib/storage";
+import {
+  getTransactionsByPeriod,
+  getTransactionsByType,
+  getTransactionsByCategory,
+  getCategoryTotals,
+  getUniqueCategories,
+  getUniquePlatforms,
+  Transaction,
+} from "@/lib/storage";
 import { useNavigate } from "react-router-dom";
+import HistoryFilters from "@/components/HistoryFilters";
+import HistorySummary from "@/components/HistorySummary";
 
 const Historico = () => {
   const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [periodFilter, setPeriodFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<'income' | 'expense' | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  useEffect(() => {
-    setTransactions(getTransactions());
+  // Get all available categories and platforms
+  const allCategories = useMemo(() => {
+    const categories = getUniqueCategories();
+    const platforms = getUniquePlatforms();
+    return [...categories, ...platforms];
   }, []);
+
+  // Apply filters
+  const filteredTransactions = useMemo(() => {
+    let filtered = getTransactionsByPeriod(periodFilter);
+    filtered = getTransactionsByType(filtered, typeFilter);
+    if (categoryFilter !== 'all') {
+      filtered = getTransactionsByCategory(filtered, categoryFilter);
+    }
+    return filtered;
+  }, [periodFilter, typeFilter, categoryFilter]);
+
+  // Calculate totals
+  const { totalIncome, totalExpenses, categoryBreakdown } = useMemo(() => {
+    const income = filteredTransactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const expenses = filteredTransactions
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const breakdown = getCategoryTotals(filteredTransactions);
+    
+    return {
+      totalIncome: income,
+      totalExpenses: expenses,
+      categoryBreakdown: breakdown,
+    };
+  }, [filteredTransactions]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -40,13 +82,37 @@ const Historico = () => {
         <h1 className="text-xl font-bold">Histórico</h1>
       </header>
 
-      <main className="p-4 max-w-md mx-auto space-y-3">
-        {transactions.length === 0 ? (
+      <main className="p-4 max-w-md mx-auto space-y-4">
+        {/* Filters */}
+        <HistoryFilters
+          periodFilter={periodFilter}
+          typeFilter={typeFilter}
+          categoryFilter={categoryFilter}
+          categories={allCategories}
+          onPeriodChange={setPeriodFilter}
+          onTypeChange={setTypeFilter}
+          onCategoryChange={setCategoryFilter}
+        />
+
+        {/* Summary */}
+        <HistorySummary
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          categoryBreakdown={categoryBreakdown}
+        />
+
+        {/* Results count */}
+        <p className="text-sm text-muted-foreground text-center">
+          Mostrando {filteredTransactions.length} registro{filteredTransactions.length !== 1 ? 's' : ''}
+        </p>
+
+        {/* Transactions list */}
+        {filteredTransactions.length === 0 ? (
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground">Nenhum registro ainda</p>
+            <p className="text-muted-foreground">Nenhum registro encontrado</p>
           </Card>
         ) : (
-          transactions.map((transaction) => (
+          filteredTransactions.map((transaction) => (
             <Card key={transaction.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">

@@ -231,3 +231,105 @@ export const getMonthlyGoal = (): number => {
 export const setMonthlyGoal = (amount: number): void => {
   localStorage.setItem(MONTHLY_GOAL_KEY, amount.toString());
 };
+
+// Filtering functions for history page
+export const getTransactionsByPeriod = (period: 'today' | 'week' | 'month' | 'all'): Transaction[] => {
+  const transactions = getTransactions();
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  switch (period) {
+    case 'today': {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return transactions.filter((t) => {
+        const tDate = new Date(t.date);
+        return tDate >= now && tDate < tomorrow;
+      });
+    }
+    case 'week': {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return transactions.filter((t) => {
+        const tDate = new Date(t.date);
+        return tDate >= weekAgo;
+      });
+    }
+    case 'month': {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return transactions.filter((t) => {
+        const tDate = new Date(t.date);
+        return tDate >= monthAgo;
+      });
+    }
+    case 'all':
+    default:
+      return transactions;
+  }
+};
+
+export const getTransactionsByType = (
+  transactions: Transaction[],
+  type: 'income' | 'expense' | 'all'
+): Transaction[] => {
+  if (type === 'all') return transactions;
+  return transactions.filter((t) => t.type === type);
+};
+
+export const getTransactionsByCategory = (
+  transactions: Transaction[],
+  category: string
+): Transaction[] => {
+  return transactions.filter((t) => {
+    if (t.type === 'expense' && t.category) {
+      return t.category === category;
+    }
+    if (t.type === 'income' && t.platform) {
+      return t.platform === category;
+    }
+    return false;
+  });
+};
+
+export const getCategoryTotals = (transactions: Transaction[]) => {
+  const expenses: { [key: string]: number } = {};
+  const income: { [key: string]: number } = {};
+  
+  transactions.forEach((t) => {
+    if (t.type === 'expense' && t.category) {
+      expenses[t.category] = (expenses[t.category] || 0) + t.amount;
+    }
+    if (t.type === 'income' && t.platform) {
+      income[t.platform] = (income[t.platform] || 0) + t.amount;
+    }
+  });
+  
+  return { expenses, income };
+};
+
+export const getUniqueCategories = (): string[] => {
+  const transactions = getTransactions();
+  const categories = new Set<string>();
+  
+  transactions.forEach((t) => {
+    if (t.type === 'expense' && t.category) {
+      categories.add(t.category);
+    }
+  });
+  
+  return Array.from(categories).sort();
+};
+
+export const getUniquePlatforms = (): string[] => {
+  const transactions = getTransactions();
+  const platforms = new Set<string>();
+  
+  transactions.forEach((t) => {
+    if (t.type === 'income' && t.platform) {
+      platforms.add(t.platform);
+    }
+  });
+  
+  return Array.from(platforms).sort();
+};
