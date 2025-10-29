@@ -1,9 +1,11 @@
-import { TrendingUp, TrendingDown, Wallet, Plus, Minus, Wrench } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Plus, Minus } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
+import { DailyStatsCard } from "@/components/DailyStatsCard";
+import { GoalCard } from "@/components/GoalCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { calculateTotals, getWeeklyProfits } from "@/lib/storage";
+import { calculateTotals, getWeeklyProfits, getTodayStats, getDailyGoal } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { useState, useEffect } from "react";
 
@@ -11,10 +13,14 @@ const Home = () => {
   const navigate = useNavigate();
   const [totals, setTotals] = useState({ income: 0, expenses: 0, profit: 0 });
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [todayStats, setTodayStats] = useState({ trips: 0, workTime: "0h 0min", profit: 0, avgProfitPerTrip: 0 });
+  const [dailyGoal, setDailyGoal] = useState(0);
 
   useEffect(() => {
     setTotals(calculateTotals());
     setWeeklyData(getWeeklyProfits());
+    setTodayStats(getTodayStats());
+    setDailyGoal(getDailyGoal());
   }, []);
 
   return (
@@ -68,6 +74,20 @@ const Home = () => {
           </Button>
         </div>
 
+        {/* Daily Stats Card */}
+        <DailyStatsCard
+          trips={todayStats.trips}
+          workTime={todayStats.workTime}
+          avgProfitPerTrip={todayStats.avgProfitPerTrip}
+        />
+
+        {/* Goal Card */}
+        <GoalCard
+          goal={dailyGoal}
+          current={todayStats.profit}
+          type="daily"
+        />
+
         {/* Weekly Chart */}
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -95,21 +115,6 @@ const Home = () => {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </Card>
-
-        {/* Reminder Card */}
-        <Card className="p-4 bg-secondary border-primary/20">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Wrench size={24} className="text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Manutenção preventiva</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Troca de óleo em 300 km
-              </p>
-            </div>
-          </div>
         </Card>
       </main>
     </div>

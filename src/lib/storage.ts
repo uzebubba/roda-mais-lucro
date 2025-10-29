@@ -179,3 +179,55 @@ export const getWeeklyProfits = () => {
   
   return days;
 };
+
+const DAILY_GOAL_KEY = "roda_plus_daily_goal";
+const MONTHLY_GOAL_KEY = "roda_plus_monthly_goal";
+
+export const getTodayStats = () => {
+  const transactions = getTransactions();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const todayTransactions = transactions.filter((t) => {
+    const tDate = new Date(t.date);
+    return tDate >= today && tDate < tomorrow;
+  });
+  
+  const trips = todayTransactions.filter((t) => t.type === "income").length;
+  const income = todayTransactions
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const expenses = todayTransactions
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const profit = income - expenses;
+  const avgProfitPerTrip = trips > 0 ? profit / trips : 0;
+  
+  return {
+    trips,
+    workTime: "8h 30min", // Mock - pode ser implementado depois
+    profit,
+    avgProfitPerTrip,
+  };
+};
+
+export const getDailyGoal = (): number => {
+  const goal = localStorage.getItem(DAILY_GOAL_KEY);
+  return goal ? parseFloat(goal) : 300;
+};
+
+export const setDailyGoal = (amount: number): void => {
+  localStorage.setItem(DAILY_GOAL_KEY, amount.toString());
+};
+
+export const getMonthlyGoal = (): number => {
+  const goal = localStorage.getItem(MONTHLY_GOAL_KEY);
+  return goal ? parseFloat(goal) : 6000;
+};
+
+export const setMonthlyGoal = (amount: number): void => {
+  localStorage.setItem(MONTHLY_GOAL_KEY, amount.toString());
+};
