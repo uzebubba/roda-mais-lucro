@@ -4,24 +4,39 @@ import { DailyStatsCard } from "@/components/DailyStatsCard";
 import { GoalCard } from "@/components/GoalCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
 import { calculateTotals, getWeeklyProfits, getTodayStats, getDailyGoal } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import TransactionForm from "@/components/TransactionForm";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 const Home = () => {
-  const navigate = useNavigate();
   const [totals, setTotals] = useState({ income: 0, expenses: 0, profit: 0 });
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [todayStats, setTodayStats] = useState({ trips: 0, workTime: "0h 0min", profit: 0, avgProfitPerTrip: 0 });
   const [dailyGoal, setDailyGoal] = useState(0);
+  const [activeType, setActiveType] = useState<"income" | "expense" | null>(null);
 
-  useEffect(() => {
+  const loadDashboardData = useCallback(() => {
     setTotals(calculateTotals());
     setWeeklyData(getWeeklyProfits());
     setTodayStats(getTodayStats());
     setDailyGoal(getDailyGoal());
   }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  const handleTransactionSaved = () => {
+    loadDashboardData();
+    setActiveType(null);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -57,7 +72,7 @@ const Home = () => {
         <div className="grid grid-cols-2 gap-3">
           <Button
             size="lg"
-            onClick={() => navigate("/registrar?type=income")}
+            onClick={() => setActiveType("income")}
             className="h-14 gap-2 bg-primary hover:bg-primary/90"
           >
             <Plus size={20} />
@@ -66,7 +81,7 @@ const Home = () => {
           <Button
             size="lg"
             variant="destructive"
-            onClick={() => navigate("/registrar?type=expense")}
+            onClick={() => setActiveType("expense")}
             className="h-14 gap-2"
           >
             <Minus size={20} />
@@ -117,6 +132,32 @@ const Home = () => {
           </ResponsiveContainer>
         </Card>
       </main>
+
+      <Drawer
+        open={activeType !== null}
+        shouldScaleBackground={false}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveType(null);
+          }
+        }}
+      >
+        {activeType && (
+          <DrawerContent className="mx-auto w-full max-w-md border-border">
+            <DrawerHeader className="px-6 pt-6 pb-3 text-left">
+              <DrawerTitle>
+                {activeType === "income" ? "Registrar ganho" : "Registrar gasto"}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="px-6 pb-6">
+              <TransactionForm
+                initialType={activeType}
+                onSuccess={handleTransactionSaved}
+              />
+            </div>
+          </DrawerContent>
+        )}
+      </Drawer>
     </div>
   );
 };
