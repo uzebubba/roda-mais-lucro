@@ -10,6 +10,7 @@ import Fixas from "./pages/Fixas";
 import Perfil from "./pages/Perfil";
 import { BottomNav } from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => {
             <Route path="/historico" element={<><Historico /><BottomNav /></>} />
             <Route path="/fixas" element={<><Fixas /><BottomNav /></>} />
             <Route path="/perfil" element={<><Perfil /><BottomNav /></>} />
+            <Route path="/login" element={<Login />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

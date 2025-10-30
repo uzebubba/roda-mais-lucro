@@ -145,7 +145,7 @@ const Fixas = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-card border-b border-border px-4 py-4 flex items-center justify-between">
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center justify-between animate-fade-in">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -155,7 +155,7 @@ const Fixas = () => {
           >
             <ArrowLeft size={20} />
           </Button>
-          <h1 className="text-xl font-bold">Contas Fixas</h1>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Contas Fixas</h1>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -213,8 +213,8 @@ const Fixas = () => {
         </Dialog>
       </header>
 
-      <main className="p-4 max-w-md mx-auto space-y-3">
-        <Card className="p-4 space-y-4">
+      <main className="p-4 max-w-md mx-auto space-y-3 animate-fade-in">
+        <Card className="p-4 space-y-4 glass-card animate-fade-in">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -323,12 +323,12 @@ const Fixas = () => {
         </Card>
 
         {expenses.length === 0 ? (
-          <Card className="p-8 text-center">
+          <Card className="p-8 text-center glass-card animate-fade-in">
             <p className="text-muted-foreground">Nenhuma conta fixa cadastrada</p>
           </Card>
         ) : (
           expenses.map((expense) => (
-            <Card key={expense.id} className="p-4">
+            <Card key={expense.id} className="p-4 glass-card animate-fade-in">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1">
                   <div className="p-2 bg-muted rounded-lg">

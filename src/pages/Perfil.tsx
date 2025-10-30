@@ -49,7 +49,7 @@ const Perfil = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-card border-b border-border px-4 py-4 flex items-center gap-3">
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center gap-3 animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
@@ -58,12 +58,12 @@ const Perfil = () => {
         >
           <ArrowLeft size={20} />
         </Button>
-        <h1 className="text-xl font-bold">Perfil</h1>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Perfil</h1>
       </header>
 
-      <main className="p-4 max-w-md mx-auto space-y-4">
+      <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
         {/* User Info */}
-        <Card className="p-6">
+        <Card className="p-6 glass-card animate-fade-in">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="bg-primary text-primary-foreground text-xl">
@@ -105,7 +105,7 @@ const Perfil = () => {
         </Card>
 
         {/* Plan Card */}
-        <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 animate-fade-in">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Crown size={24} className="text-primary" />
@@ -128,7 +128,7 @@ const Perfil = () => {
         </Card>
 
         {/* Options */}
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in">
           <Button
             variant="outline"
             size="lg"
@@ -151,7 +151,7 @@ const Perfil = () => {
         </div>
 
         {/* Announcements */}
-        <Card className="overflow-hidden border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-lg">
+        <Card className="overflow-hidden border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-lg animate-fade-in">
           <div className="flex items-start gap-4 p-5">
             <div className="mt-1 shrink-0 rounded-full bg-primary text-primary-foreground p-2.5 shadow-lg shadow-primary/30">
               <Megaphone size={22} />
@@ -191,7 +191,7 @@ const Perfil = () => {
         </Card>
 
         {/* Info */}
-        <Card className="p-4 bg-muted border-0">
+        <Card className="p-4 bg-muted border-0 animate-fade-in">
           <p className="text-xs text-muted-foreground text-center">
             Roda+ Controle v1.0.0
             <br />
