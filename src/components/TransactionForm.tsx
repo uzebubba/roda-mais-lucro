@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Mic, MicOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { addTransaction, Transaction } from "@/lib/storage";
 import { toast } from "sonner";
+import { useSpeechRecognition } from "@/hooks/useSpeech";
+import { parseTransactionSpeech } from "@/lib/speech-parser";
 
 type TransactionType = "income" | "expense";
 
@@ -35,6 +37,11 @@ const TransactionForm = ({
   const [platform, setPlatform] = useState("");
   const [category, setCategory] = useState("");
 
+  // Speech
+  const speech = useSpeechRecognition();
+  const [lastHeard, setLastHeard] = useState("");
+  const micSupported = speech.supported;
+
   const resetForm = (nextType: TransactionType = initialType) => {
     setType(nextType);
     setDate(new Date().toISOString().split("T")[0]);
@@ -48,6 +55,35 @@ const TransactionForm = ({
     resetForm(initialType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialType]);
+
+  // When transcription arrives, parse and fill form
+  useEffect(() => {
+    if (!speech.transcript) return;
+    setLastHeard(speech.transcript);
+    const parsed = parseTransactionSpeech(speech.transcript);
+    if (!parsed) {
+      toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.");
+      return;
+    }
+
+    if (parsed.amount !== null) {
+      setAmount(parsed.amount.toString());
+    }
+    setDescription(parsed.description);
+
+    if (parsed.type === "expense") {
+      setType("expense");
+      setCategory(parsed.category || "");
+      setPlatform("");
+    } else {
+      setType("income");
+      setPlatform(parsed.platform || "");
+      setCategory("");
+    }
+
+    toast.success("Campos preenchidos por voz. Confira e salve.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.transcript]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +123,27 @@ const TransactionForm = ({
         </TabsList>
 
         <Card className="p-5 space-y-4 glass-card">
+          {/* Voice toolbar */}
+          {micSupported && (
+            <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                Preencher por voz {lastHeard && <span className="text-[11px]">• "{lastHeard}"</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                {speech.listening ? (
+                  <Button variant="destructive" size="sm" onClick={speech.stop} className="gap-1">
+                    <MicOff size={14} />
+                    Parar
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={speech.start} className="gap-1">
+                    <Mic size={14} />
+                    Falar
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <Label htmlFor="date">Data</Label>
             <Input

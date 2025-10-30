@@ -1,4 +1,4 @@
-import { ArrowLeft, Crown, Download, MessageCircle, Save } from "lucide-react";
+import { ArrowLeft, Crown, Download, MessageCircle, Save, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -149,6 +149,46 @@ const Perfil = () => {
             <span className="text-base">Suporte via WhatsApp</span>
           </Button>
         </div>
+
+        {/* Announcements */}
+        <Card className="overflow-hidden border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-lg">
+          <div className="flex items-start gap-4 p-5">
+            <div className="mt-1 shrink-0 rounded-full bg-primary text-primary-foreground p-2.5 shadow-lg shadow-primary/30">
+              <Megaphone size={22} />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-primary/70 font-semibold">Novidades fresquinhas</p>
+                <h3 className="text-lg font-extrabold text-foreground leading-tight">
+                  Roda+ evolui junto com você 🚀
+                </h3>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                <li>
+                  <span className="font-semibold text-primary">Alertas inteligentes</span> para pneus, óleo e descansos legais estão chegando para cuidar do seu carro e da sua saúde.
+                </li>
+                <li>
+                  <span className="font-semibold text-primary">Painéis premium</span> com metas mensais, heatmap de horários e previsões de ganho para planejar o seu dia.
+                </li>
+                <li>
+                  <span className="font-semibold text-primary">Integrações oficiais</span> com Uber, 99 e inDriver para importar corridas automaticamente.
+                </li>
+              </ul>
+              <div className="rounded-md border border-primary/40 bg-primary/15 px-3 py-2 text-xs text-primary-foreground/90 font-medium">
+                Conte pra gente o que faria diferença no seu trabalho. As melhores ideias entram no roadmap prioritário.
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="gap-2 border-primary/60 text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={handleWhatsApp}
+              >
+                Quero sugerir algo agora
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Info */}
         <Card className="p-4 bg-muted border-0">
