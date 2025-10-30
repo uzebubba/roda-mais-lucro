@@ -17,6 +17,7 @@ import {
   getWeeklyWorkHistory,
   startWorkSession,
   endWorkSession,
+  getUserProfile,
 } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { useState, useEffect, useCallback } from "react";
@@ -35,9 +36,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import type { TodayStats, WeeklyWorkSummary } from "@/lib/storage";
+import type { TodayStats, WeeklyWorkSummary, UserProfile } from "@/lib/storage";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const getTimeOfDayGreeting = (): "Bom dia" | "Boa tarde" | "Boa noite" => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+};
 
 const formatMinutesLong = (totalMinutes: number): string => {
   if (totalMinutes <= 0) {
@@ -96,6 +104,7 @@ const Home = () => {
       return [];
     }
   };
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => getUserProfile());
   const [todayStats, setTodayStats] = useState<TodayStats>(initialTodayStats);
   const [weeklyWorkHistory, setWeeklyWorkHistory] = useState<WeeklyWorkSummary[]>(initialWeeklyWorkHistory);
   const [dailyGoal, setDailyGoalState] = useState(() => getDailyGoal());
@@ -114,6 +123,7 @@ const Home = () => {
     setTotals(calculateTotals());
     setWeeklyData(getWeeklyProfits());
     refreshWorkData();
+    setUserProfile(getUserProfile());
     setDailyGoalState(getDailyGoal());
     setMonthlyGoalState(getMonthlyGoal());
     const monthTransactions = getTransactionsByPeriod("month");
@@ -197,15 +207,26 @@ const Home = () => {
       isToday: isSameDay(date, now),
     };
   });
+  const greetingPrefix = getTimeOfDayGreeting();
+  const safeName = userProfile.fullName && userProfile.fullName.trim().length > 0
+    ? userProfile.fullName.trim()
+    : "Motorista Parceiro";
+  const firstName = safeName.split(" ").filter(Boolean)[0] ?? safeName;
+  const displayName = firstName.length > 0 ? firstName : "Motorista";
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="glass-card border-b border-border/50 px-4 py-6 mb-4 animate-fade-in">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold text-foreground bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            Roda+ Controle
+      <header className="border-b border-border/40 px-3 py-0.5">
+        <div className="mx-auto w-full max-w-md leading-tight">
+          <h1 className="text-lg font-semibold text-foreground">
+            {greetingPrefix},{" "}
+            <span className="font-bold text-primary">
+              {displayName}
+            </span>
           </h1>
-          <p className="text-sm text-muted-foreground">Seu controle financeiro inteligente</p>
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Seu controle financeiro inteligente
+          </p>
         </div>
       </header>
 

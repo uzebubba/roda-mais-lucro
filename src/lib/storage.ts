@@ -40,6 +40,12 @@ export interface OilReminderSettings {
   lastChangeDate: string;
 }
 
+export interface UserProfile {
+  fullName: string;
+  email: string;
+  avatarInitials?: string;
+}
+
 export interface WorkSession {
   id: string;
   startTime: string;
@@ -66,6 +72,7 @@ const FUEL_ENTRIES_KEY = "roda_plus_fuel_entries";
 const VEHICLE_STATE_KEY = "roda_plus_vehicle_state";
 const OIL_REMINDER_KEY = "roda_plus_oil_reminder";
 const WORK_SESSIONS_KEY = "roda_plus_work_sessions";
+const USER_PROFILE_KEY = "roda_plus_user_profile";
 
 const nowIso = () => new Date().toISOString();
 
@@ -137,6 +144,7 @@ const initializeMockData = () => {
   const existingFuelEntries = localStorage.getItem(FUEL_ENTRIES_KEY);
   const existingVehicleState = localStorage.getItem(VEHICLE_STATE_KEY);
   const existingOilReminder = localStorage.getItem(OIL_REMINDER_KEY);
+  const existingProfile = localStorage.getItem(USER_PROFILE_KEY);
 
   if (!existingTransactions) {
     const mockTransactions: Transaction[] = [
@@ -244,6 +252,15 @@ const initializeMockData = () => {
       lastChangeDate: nowIso(),
     };
     localStorage.setItem(OIL_REMINDER_KEY, JSON.stringify(mockOilReminder));
+  }
+
+  if (!existingProfile) {
+    const mockProfile: UserProfile = {
+      fullName: "João Motorista",
+      email: "joao@email.com",
+      avatarInitials: "JM",
+    };
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(mockProfile));
   }
 };
 
@@ -698,4 +715,43 @@ export const getUniquePlatforms = (): string[] => {
   });
   
   return Array.from(platforms).sort();
+};
+
+export const getUserProfile = (): UserProfile => {
+  const data = localStorage.getItem(USER_PROFILE_KEY);
+  if (data) {
+    try {
+      return JSON.parse(data) as UserProfile;
+    } catch (_error) {
+      // ignore invalid data
+    }
+  }
+
+  const fallback: UserProfile = {
+    fullName: "João Motorista",
+    email: "joao@email.com",
+    avatarInitials: "JM",
+  };
+  localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(fallback));
+  return fallback;
+};
+
+export const updateUserProfile = (updates: Partial<UserProfile>): UserProfile => {
+  const current = getUserProfile();
+  const merged: UserProfile = {
+    ...current,
+    ...updates,
+  };
+
+  if (!merged.avatarInitials || merged.avatarInitials.trim().length === 0) {
+    merged.avatarInitials = merged.fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
+  }
+
+  localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(merged));
+  return merged;
 };

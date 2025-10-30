@@ -1,11 +1,19 @@
-import { ArrowLeft, Crown, Download, MessageCircle } from "lucide-react";
+import { ArrowLeft, Crown, Download, MessageCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { toast } from "sonner";
+import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/storage";
 
 const Perfil = () => {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfile>(() => getUserProfile());
+  const [fullName, setFullName] = useState(profile.fullName);
+  const [email, setEmail] = useState(profile.email ?? "");
 
   const handleWhatsApp = () => {
     window.open("https://wa.me/5511999999999?text=Olá, preciso de ajuda com o Roda+ Controle", "_blank");
@@ -14,6 +22,29 @@ const Perfil = () => {
   const handleExport = () => {
     // Placeholder for export functionality
     alert("Funcionalidade de exportar dados será implementada em breve!");
+  };
+
+  const handleSaveProfile = () => {
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      toast.error("Informe seu nome para personalizar a experiência.");
+      return;
+    }
+
+    const updated = updateUserProfile({
+      fullName: trimmedName,
+      email: email.trim(),
+      avatarInitials: trimmedName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join(""),
+    });
+    setProfile(updated);
+    setFullName(updated.fullName);
+    setEmail(updated.email);
+    toast.success("Perfil atualizado com sucesso!");
   };
 
   return (
@@ -36,13 +67,40 @@ const Perfil = () => {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                JM
+                {profile.avatarInitials && profile.avatarInitials.length > 0
+                  ? profile.avatarInitials
+                  : "JM"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-bold text-foreground">João Motorista</h2>
-              <p className="text-sm text-muted-foreground">joao@email.com</p>
+              <h2 className="text-xl font-bold text-foreground">{profile.fullName}</h2>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
             </div>
+          </div>
+          <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Seu nome</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Digite como quer ser chamado"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="seu@email.com"
+              />
+            </div>
+            <Button className="w-full gap-2" onClick={handleSaveProfile}>
+              <Save size={16} />
+              Salvar dados
+            </Button>
           </div>
         </Card>
 
