@@ -200,11 +200,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-card border-b border-border px-4 py-6">
-        <h1 className="text-2xl font-bold text-foreground">Roda+ Controle</h1>
-        <p className="text-sm text-muted-foreground">Seu controle financeiro</p>
-      </header>
-
       <main className="p-4 space-y-6 max-w-md mx-auto">
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-3">
