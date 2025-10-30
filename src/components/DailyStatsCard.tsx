@@ -38,7 +38,6 @@ export const DailyStatsCard = ({
   isWorking,
   onStartShift,
   onStopShift,
-  weeklyHistory,
   weeklyTotal,
   activeSessionStart,
   onOpenHistory,

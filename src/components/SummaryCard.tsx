@@ -16,12 +16,14 @@ export const SummaryCard = ({ title, value, icon: Icon, variant }: SummaryCardPr
   };
 
   return (
-    <Card className="p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon size={20} />
-        <span className="text-sm font-medium">{title}</span>
+    <Card className="p-4 flex flex-col gap-2 glass-card hover:border-border transition-all duration-300 group">
+      <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
+        <div className={`p-1.5 rounded-lg ${variant === 'success' ? 'bg-primary/10' : variant === 'danger' ? 'bg-destructive/10' : 'bg-muted'}`}>
+          <Icon size={18} />
+        </div>
+        <span className="text-xs font-medium">{title}</span>
       </div>
-      <p className={`text-2xl font-bold ${variantStyles[variant]}`}>
+      <p className={`text-xl font-bold ${variantStyles[variant]}`}>
         R$ {value.toFixed(2).replace(".", ",")}
       </p>
     </Card>
