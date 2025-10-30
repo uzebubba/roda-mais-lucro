@@ -40,13 +40,90 @@ export interface OilReminderSettings {
   lastChangeDate: string;
 }
 
+export interface WorkSession {
+  id: string;
+  startTime: string;
+  endTime?: string;
+}
+
+export interface WeeklyWorkSummary {
+  date: string;
+  totalMinutes: number;
+}
+
+export interface TodayStats {
+  trips: number;
+  workMinutes: number;
+  profit: number;
+  avgProfitPerTrip: number;
+  isWorking: boolean;
+  activeSessionStart: string | null;
+}
+
 const TRANSACTIONS_KEY = "roda_plus_transactions";
 const FIXED_EXPENSES_KEY = "roda_plus_fixed_expenses";
 const FUEL_ENTRIES_KEY = "roda_plus_fuel_entries";
 const VEHICLE_STATE_KEY = "roda_plus_vehicle_state";
 const OIL_REMINDER_KEY = "roda_plus_oil_reminder";
+const WORK_SESSIONS_KEY = "roda_plus_work_sessions";
 
 const nowIso = () => new Date().toISOString();
+
+const getWorkSessionsList = (): WorkSession[] => {
+  const data = localStorage.getItem(WORK_SESSIONS_KEY);
+  if (!data) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(data) as WorkSession[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
+const saveWorkSessions = (sessions: WorkSession[]): void => {
+  localStorage.setItem(WORK_SESSIONS_KEY, JSON.stringify(sessions));
+};
+
+const sortSessionsByStartDesc = (sessions: WorkSession[]): WorkSession[] =>
+  sessions.slice().sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
+const getWorkSessionsSorted = (): WorkSession[] => sortSessionsByStartDesc(getWorkSessionsList());
+
+const generateWorkSessionId = (): string =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const calculateMinutesForDate = (sessions: WorkSession[], date: Date, now: Date): number => {
+  const dayStart = new Date(date);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayStartMs = dayStart.getTime();
+  const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
+  const nowMs = now.getTime();
+
+  return sessions.reduce((total, session) => {
+    const startMs = new Date(session.startTime).getTime();
+    const endMs = session.endTime ? new Date(session.endTime).getTime() : nowMs;
+
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+      return total;
+    }
+
+    if (endMs <= dayStartMs || startMs >= dayEndMs) {
+      return total;
+    }
+
+    const effectiveStart = Math.max(startMs, dayStartMs);
+    const effectiveEnd = Math.min(endMs, dayEndMs);
+    if (effectiveEnd <= effectiveStart) {
+      return total;
+    }
+
+    return total + Math.floor((effectiveEnd - effectiveStart) / (1000 * 60));
+  }, 0);
+};
 
 const getFuelEntriesRaw = (): FuelEntry[] => {
   const data = localStorage.getItem(FUEL_ENTRIES_KEY);
@@ -345,6 +422,73 @@ export const registerOilChange = (km: number): OilReminderSettings => {
   });
 };
 
+export const getWorkSessions = (): WorkSession[] => getWorkSessionsSorted();
+
+export const getActiveWorkSession = (): WorkSession | null => {
+  const sessions = getWorkSessionsSorted();
+  return sessions.find((session) => !session.endTime) ?? null;
+};
+
+export const startWorkSession = (startTime: Date = new Date()): WorkSession => {
+  const sessions = getWorkSessionsSorted();
+  const active = sessions.find((session) => !session.endTime);
+  if (active) {
+    return active;
+  }
+
+  const newSession: WorkSession = {
+    id: generateWorkSessionId(),
+    startTime: startTime.toISOString(),
+  };
+
+  const updated = sortSessionsByStartDesc([newSession, ...sessions]);
+  saveWorkSessions(updated);
+  return newSession;
+};
+
+export const endWorkSession = (endTime: Date = new Date()): WorkSession | null => {
+  const sessions = getWorkSessionsSorted();
+  const index = sessions.findIndex((session) => !session.endTime);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedSession: WorkSession = {
+    ...sessions[index],
+    endTime: endTime.toISOString(),
+  };
+
+  const updated = sessions.slice();
+  updated[index] = updatedSession;
+  saveWorkSessions(sortSessionsByStartDesc(updated));
+  return updatedSession;
+};
+
+export const getWorkDurationForDate = (date: Date): number => {
+  const sessions = getWorkSessionsSorted();
+  return calculateMinutesForDate(sessions, date, new Date());
+};
+
+export const getWeeklyWorkHistory = (): WeeklyWorkSummary[] => {
+  const sessions = getWorkSessionsSorted();
+  const now = new Date();
+
+  const history: WeeklyWorkSummary[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    day.setDate(day.getDate() - i);
+
+    history.push({
+      date: day.toISOString(),
+      totalMinutes: calculateMinutesForDate(sessions, day, now),
+    });
+  }
+
+  return history;
+};
+
 export const calculateTotals = () => {
   const transactions = getTransactions();
   const income = transactions
@@ -398,7 +542,7 @@ export const getWeeklyProfits = () => {
 const DAILY_GOAL_KEY = "roda_plus_daily_goal";
 const MONTHLY_GOAL_KEY = "roda_plus_monthly_goal";
 
-export const getTodayStats = () => {
+export const getTodayStats = (): TodayStats => {
   const transactions = getTransactions();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -420,12 +564,19 @@ export const getTodayStats = () => {
     .reduce((sum, t) => sum + t.amount, 0);
   const profit = income - expenses;
   const avgProfitPerTrip = trips > 0 ? profit / trips : 0;
-  
+
+  const sessions = getWorkSessionsSorted();
+  const now = new Date();
+  const workMinutes = calculateMinutesForDate(sessions, today, now);
+  const activeSession = sessions.find((session) => !session.endTime) ?? null;
+
   return {
     trips,
-    workTime: "8h 30min", // Mock - pode ser implementado depois
+    workMinutes,
     profit,
     avgProfitPerTrip,
+    isWorking: Boolean(activeSession),
+    activeSessionStart: activeSession?.startTime ?? null,
   };
 };
 

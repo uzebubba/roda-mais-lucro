@@ -14,6 +14,9 @@ import {
   setDailyGoal as persistDailyGoal,
   setMonthlyGoal as persistMonthlyGoal,
   getTransactionsByPeriod,
+  getWeeklyWorkHistory,
+  startWorkSession,
+  endWorkSession,
 } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { useState, useEffect, useCallback } from "react";
@@ -24,21 +27,93 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import type { TodayStats, WeeklyWorkSummary } from "@/lib/storage";
+
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const formatMinutesLong = (totalMinutes: number): string => {
+  if (totalMinutes <= 0) {
+    return "0min";
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}min`;
+  }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  return `${minutes}min`;
+};
+
+const formatMinutesShort = (totalMinutes: number): string => {
+  if (totalMinutes <= 0) {
+    return "--";
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h${String(minutes).padStart(2, "0")}`;
+  }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  return `${minutes}min`;
+};
+
+const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const Home = () => {
   const [totals, setTotals] = useState({ income: 0, expenses: 0, profit: 0 });
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
-  const [todayStats, setTodayStats] = useState({ trips: 0, workTime: "0h 0min", profit: 0, avgProfitPerTrip: 0 });
+  const initialTodayStats = (): TodayStats => {
+    try {
+      return getTodayStats();
+    } catch (_error) {
+      return {
+        trips: 0,
+        workMinutes: 0,
+        profit: 0,
+        avgProfitPerTrip: 0,
+        isWorking: false,
+        activeSessionStart: null,
+      };
+    }
+  };
+  const initialWeeklyWorkHistory = (): WeeklyWorkSummary[] => {
+    try {
+      return getWeeklyWorkHistory();
+    } catch (_error) {
+      return [];
+    }
+  };
+  const [todayStats, setTodayStats] = useState<TodayStats>(initialTodayStats);
+  const [weeklyWorkHistory, setWeeklyWorkHistory] = useState<WeeklyWorkSummary[]>(initialWeeklyWorkHistory);
   const [dailyGoal, setDailyGoalState] = useState(() => getDailyGoal());
   const [monthlyGoal, setMonthlyGoalState] = useState(() => getMonthlyGoal());
   const [monthlyProgress, setMonthlyProgress] = useState(0);
   const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [activeType, setActiveType] = useState<"income" | "expense" | null>(null);
+  const [isWorkHistoryOpen, setIsWorkHistoryOpen] = useState(false);
+
+  const refreshWorkData = useCallback(() => {
+    setTodayStats(getTodayStats());
+    setWeeklyWorkHistory(getWeeklyWorkHistory());
+  }, []);
 
   const loadDashboardData = useCallback(() => {
     setTotals(calculateTotals());
     setWeeklyData(getWeeklyProfits());
-    setTodayStats(getTodayStats());
+    refreshWorkData();
     setDailyGoalState(getDailyGoal());
     setMonthlyGoalState(getMonthlyGoal());
     const monthTransactions = getTransactionsByPeriod("month");
@@ -49,11 +124,25 @@ const Home = () => {
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
     setMonthlyProgress(monthIncome - monthExpenses);
-  }, []);
+  }, [refreshWorkData]);
 
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (!todayStats.isWorking) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      refreshWorkData();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [todayStats.isWorking, refreshWorkData]);
 
   const handleTransactionSaved = () => {
     loadDashboardData();
@@ -67,6 +156,47 @@ const Home = () => {
     setMonthlyGoalState(monthly);
     loadDashboardData();
   };
+
+  const handleStartShift = () => {
+    startWorkSession();
+    refreshWorkData();
+    toast.success("Expediente iniciado!");
+  };
+
+  const handleStopShift = () => {
+    const session = endWorkSession();
+    refreshWorkData();
+    if (session) {
+      toast.success("Expediente finalizado!");
+    } else {
+      toast.warning("Nenhum expediente ativo para finalizar.");
+    }
+  };
+
+  const workTimeLabel = formatMinutesLong(todayStats.workMinutes);
+  const weeklyTotalMinutes = weeklyWorkHistory.reduce((sum, entry) => sum + entry.totalMinutes, 0);
+  const weeklyTotalLabel = formatMinutesLong(weeklyTotalMinutes);
+  const now = new Date();
+  const weeklyHistoryItems = weeklyWorkHistory.map((entry) => {
+    const date = new Date(entry.date);
+    if (Number.isNaN(date.getTime())) {
+      return {
+        key: entry.date,
+        dayLabel: "--",
+        dateLabel: "--/--",
+        durationLabel: formatMinutesShort(entry.totalMinutes),
+        isToday: false,
+      };
+    }
+
+    return {
+      key: entry.date,
+      dayLabel: DAY_NAMES[date.getDay()],
+      dateLabel: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date),
+      durationLabel: formatMinutesShort(entry.totalMinutes),
+      isToday: isSameDay(date, now),
+    };
+  });
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -122,8 +252,14 @@ const Home = () => {
         {/* Daily Stats Card */}
         <DailyStatsCard
           trips={todayStats.trips}
-          workTime={todayStats.workTime}
+          workTime={workTimeLabel}
           avgProfitPerTrip={todayStats.avgProfitPerTrip}
+          isWorking={todayStats.isWorking}
+          onStartShift={handleStartShift}
+          onStopShift={handleStopShift}
+          weeklyTotal={weeklyTotalLabel}
+          activeSessionStart={todayStats.activeSessionStart}
+          onOpenHistory={() => setIsWorkHistoryOpen(true)}
         />
 
         {/* Goal Card */}
@@ -198,6 +334,39 @@ const Home = () => {
           </DrawerContent>
         )}
       </Drawer>
+
+      <Dialog open={isWorkHistoryOpen} onOpenChange={setIsWorkHistoryOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Histórico de horas</DialogTitle>
+            <DialogDescription>Últimos 7 dias de expediente</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between rounded-lg border border-secondary px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Total da semana</span>
+            <span className="font-semibold text-foreground">{weeklyTotalLabel}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {weeklyHistoryItems.length === 0 ? (
+              <div className="col-span-3 rounded-lg border border-dashed border-border bg-secondary/10 py-6 text-center text-xs text-muted-foreground">
+                Sem registros ainda
+              </div>
+            ) : (
+              weeklyHistoryItems.map((item) => (
+                <div
+                  key={item.key}
+                  className={`rounded-lg border border-border bg-secondary/10 p-2 text-center ${
+                    item.isToday ? "border-primary bg-primary/10 text-foreground" : ""
+                  }`}
+                >
+                  <p className="text-[11px] font-medium text-foreground">{item.dayLabel}</p>
+                  <p className="text-[10px] text-muted-foreground">{item.dateLabel}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{item.durationLabel}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
