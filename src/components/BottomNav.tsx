@@ -1,10 +1,10 @@
-import { Home, Plus, History, Calendar, User } from "lucide-react";
+import { Home, Fuel, History, Calendar, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/" },
-  { icon: Plus, label: "Registrar", path: "/registrar" },
+  { icon: Fuel, label: "Combustível", path: "/registrar" },
   { icon: History, label: "Histórico", path: "/historico" },
   { icon: Calendar, label: "Fixas", path: "/fixas" },
   { icon: User, label: "Perfil", path: "/perfil" },
