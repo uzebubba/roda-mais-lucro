@@ -45,7 +45,7 @@ export const DailyStatsCard = ({
   const startTimeLabel = formatStartTime(activeSessionStart);
 
   return (
-    <Card className="p-4 space-y-5">
+    <Card className="p-5 space-y-5 glass-card animate-fade-in">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Meu Dia</h2>
@@ -84,7 +84,7 @@ export const DailyStatsCard = ({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-secondary/20 p-4">
+      <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-4 backdrop-blur-sm hover:border-primary/30 transition-all duration-300">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -123,7 +123,7 @@ export const DailyStatsCard = ({
       </div>
 
       <div>
-        <div className="flex items-center justify-between rounded-xl border border-dashed border-border bg-secondary/10 px-3 py-3">
+        <div className="flex items-center justify-between rounded-xl border border-dashed border-border/50 bg-gradient-to-br from-primary/5 to-primary/10 px-3 py-3 hover:border-primary/40 transition-all duration-300">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1">
               <History size={14} />

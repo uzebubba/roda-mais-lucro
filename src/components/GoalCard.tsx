@@ -39,10 +39,12 @@ export const GoalCard = ({ views, activeType, onTypeChange, actionSlot }: GoalCa
   const isGoalReached = safeGoal > 0 && clampedCurrent >= safeGoal;
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="p-5 space-y-4 glass-card animate-fade-in hover:border-primary/20 transition-all duration-300">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-2">
-          <Target size={20} className="text-primary" />
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Target size={18} className="text-primary" />
+          </div>
           <h2 className="text-lg font-semibold text-foreground">
             Meta {typeLabels[currentView.type]}
           </h2>
@@ -74,7 +76,7 @@ export const GoalCard = ({ views, activeType, onTypeChange, actionSlot }: GoalCa
           </span>
         </div>
         
-        <Progress value={progress} className="h-2" />
+        <Progress value={progress} className="h-3" />
 
         <p className={`text-sm font-medium ${isGoalReached ? "text-primary" : "text-muted-foreground"}`}>
           {safeGoal === 0

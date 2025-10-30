@@ -211,7 +211,7 @@ const Home = () => {
 
       <main className="p-4 space-y-6 max-w-md mx-auto">
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 animate-fade-in">
           <SummaryCard
             title="Ganhei"
             value={totals.income}
@@ -233,11 +233,11 @@ const Home = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 animate-fade-in">
           <Button
             size="lg"
             onClick={() => setActiveType("income")}
-            className="h-14 gap-2 bg-primary hover:bg-primary/90"
+            className="h-14 gap-2 bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
           >
             <Plus size={20} />
             Registrar ganho
@@ -284,9 +284,11 @@ const Home = () => {
         />
 
         {/* Weekly Chart */}
-        <Card className="p-4">
+        <Card className="p-5 glass-card">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp size={20} className="text-primary" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp size={18} className="text-primary" />
+            </div>
             Lucro dos últimos 7 dias
           </h2>
           <ResponsiveContainer width="100%" height={200}>
@@ -300,11 +302,12 @@ const Home = () => {
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                 axisLine={false}
               />
-              <Bar dataKey="lucro" radius={[8, 8, 0, 0]}>
+              <Bar dataKey="lucro" radius={[12, 12, 0, 0]} maxBarSize={50}>
                 {weeklyData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={entry.lucro >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))"}
+                    opacity={0.9}
                   />
                 ))}
               </Bar>

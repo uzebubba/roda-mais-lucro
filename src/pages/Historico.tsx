@@ -70,19 +70,19 @@ const Historico = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-card border-b border-border px-4 py-4 flex items-center gap-3">
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center gap-3 animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate("/")}
-          className="rounded-full"
+          className="rounded-full hover:bg-accent"
         >
           <ArrowLeft size={20} />
         </Button>
-        <h1 className="text-xl font-bold">Histórico</h1>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Histórico</h1>
       </header>
 
-      <main className="p-4 max-w-md mx-auto space-y-4">
+      <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
         {/* Filters */}
         <HistoryFilters
           periodFilter={periodFilter}
@@ -108,12 +108,12 @@ const Historico = () => {
 
         {/* Transactions list */}
         {filteredTransactions.length === 0 ? (
-          <Card className="p-8 text-center">
+          <Card className="p-8 text-center glass-card">
             <p className="text-muted-foreground">Nenhum registro encontrado</p>
           </Card>
         ) : (
           filteredTransactions.map((transaction) => (
-            <Card key={transaction.id} className="p-4">
+            <Card key={transaction.id} className="p-4 glass-card hover:border-border transition-all duration-300">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
                   <div

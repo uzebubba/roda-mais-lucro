@@ -73,20 +73,20 @@ const TransactionForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
       <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 h-12">
-          <TabsTrigger value="income" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 h-12 bg-secondary/50 backdrop-blur-sm">
+          <TabsTrigger value="income" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300">
             <Plus size={18} />
             Ganho
           </TabsTrigger>
-          <TabsTrigger value="expense" className="gap-2">
+          <TabsTrigger value="expense" className="gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive transition-all duration-300">
             <Minus size={18} />
             Gasto
           </TabsTrigger>
         </TabsList>
 
-        <Card className="p-4 space-y-4">
+        <Card className="p-5 space-y-4 glass-card">
           <div>
             <Label htmlFor="date">Data</Label>
             <Input
@@ -99,7 +99,7 @@ const TransactionForm = ({
           </div>
 
           <div>
-            <Label htmlFor="amount">Valor (R$)</Label>
+            <Label htmlFor="amount" className="text-foreground font-medium">Valor (R$)</Label>
             <Input
               id="amount"
               type="number"
@@ -107,7 +107,7 @@ const TransactionForm = ({
               placeholder="0,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-1 text-lg"
+              className="mt-1 text-lg font-semibold"
             />
           </div>
 
@@ -163,7 +163,7 @@ const TransactionForm = ({
       <Button
         type="submit"
         size="lg"
-        className="w-full h-12 text-base font-semibold"
+        className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
       >
         {submitLabel}
       </Button>

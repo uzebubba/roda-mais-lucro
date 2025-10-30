@@ -156,17 +156,17 @@ const Registrar = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-card border-b border-border px-4 py-4 flex items-center gap-3">
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center gap-3 animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate("/")}
-          className="rounded-full"
+          className="rounded-full hover:bg-accent"
         >
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-xl font-bold">Combustível</h1>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Combustível</h1>
           <p className="text-sm text-muted-foreground">
             Registre abastecimentos e acompanhe o consumo.
           </p>
@@ -174,7 +174,7 @@ const Registrar = () => {
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
-        <Card className="p-5 space-y-5">
+        <Card className="p-5 space-y-5 glass-card animate-fade-in">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wide">
@@ -188,11 +188,11 @@ const Registrar = () => {
           </div>
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as "automatic" | "manual")}>
-            <TabsList className="grid w-full grid-cols-2 h-10">
-              <TabsTrigger value="automatic" className="text-sm">
+            <TabsList className="grid w-full grid-cols-2 h-10 bg-secondary/50 backdrop-blur-sm">
+              <TabsTrigger value="automatic" className="text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300">
                 Automático
               </TabsTrigger>
-              <TabsTrigger value="manual" className="text-sm">
+              <TabsTrigger value="manual" className="text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300">
                 Manual
               </TabsTrigger>
             </TabsList>
@@ -265,7 +265,7 @@ const Registrar = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-1">
+            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
               <p className="text-xs text-muted-foreground">KM rodados</p>
               <p className="text-lg font-semibold text-foreground">
                 {derived.kmSinceLast > 0 ? formatNumber(derived.kmSinceLast, 0) : "--"}
@@ -274,7 +274,7 @@ const Registrar = () => {
                 Último: {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-1">
+            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
               <p className="text-xs text-muted-foreground">Consumo (km/L)</p>
               <p className="text-lg font-semibold text-foreground">
                 {derived.consumption > 0 ? formatNumber(derived.consumption) : "--"}
@@ -283,7 +283,7 @@ const Registrar = () => {
                 Média histórica: {stats.averageConsumption > 0 ? formatNumber(stats.averageConsumption) : "--"} km/L
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-1">
+            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
               <p className="text-xs text-muted-foreground">Custo por km</p>
               <p className="text-lg font-semibold text-foreground">
                 {derived.costPerKm > 0 ? formatCurrency(derived.costPerKm) : "--"}
@@ -297,13 +297,13 @@ const Registrar = () => {
           <Button
             onClick={handleSaveFuel}
             size="lg"
-            className="w-full h-12 text-base font-semibold"
+            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
           >
             Salvar abastecimento
           </Button>
         </Card>
 
-        <Card className="p-5 space-y-5">
+        <Card className="p-5 space-y-5 glass-card animate-fade-in">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wide">
