@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { LogIn, ArrowRight, Mail, Lock, ShieldCheck, TrendingUp, Target } from "lucide-react";
+import { LogIn, ArrowRight, Mail, Lock, ShieldCheck, TrendingUp, Target, User } from "lucide-react";
+import FullPageLoader from "@/components/FullPageLoader";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const bullets = [
   {
@@ -29,22 +32,103 @@ const bullets = [
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "register">("login");
+
+  const redirectPath = useMemo(() => {
+    const state = location.state as { from?: { pathname?: string } } | undefined;
+    return state?.from?.pathname ?? "/";
+  }, [location.state]);
+
+  useEffect(() => {
+    if (user) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate, redirectPath]);
+
+  if (authLoading) {
+    return <FullPageLoader />;
+  }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
 
-    // TODO: Substituir pela integração real com Supabase/Auth provider
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Bem-vindo de volta!", {
-        description: `Login simulado para ${email}`,
-      });
-      navigate("/");
-    }, 900);
+    const formData = new FormData(event.currentTarget);
+    const email = (formData.get("email") as string | null)?.trim();
+    const password = formData.get("password") as string | null;
+    const fullName = (formData.get("fullName") as string | null)?.trim();
+
+    if (!email || !password) {
+      toast.error("Informe e-mail e senha para continuar.");
+      return;
+    }
+
+    if (mode === "register" && !fullName) {
+      toast.error("Informe seu nome completo para criar a conta.");
+      return;
+    }
+
+    setLoading(true);
+    const run = async () => {
+      try {
+        if (mode === "login") {
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          toast.success("Bem-vindo de volta!", {
+            description: `Sessão iniciada para ${email}`,
+          });
+          navigate(redirectPath, { replace: true });
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: fullName ? { full_name: fullName } : undefined,
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data.session) {
+          const { error: loginAfterSignupError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (loginAfterSignupError) {
+            toast.success("Conta criada! Confirme seu e-mail para liberar o acesso.");
+            return;
+          }
+        }
+
+        toast.success("Conta criada com sucesso!");
+        navigate(redirectPath, { replace: true });
+      } catch (authError: unknown) {
+        const message =
+          authError instanceof Error ? authError.message : "Não foi possível processar sua solicitação.";
+        toast.error("Algo deu errado!", {
+          description: message,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void run();
   };
 
   return (
@@ -87,15 +171,25 @@ const Login = () => {
             <Card className="glass-card">
               <CardHeader className="space-y-2 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <LogIn size={22} />
+                  {mode === "login" ? <LogIn size={22} /> : <User size={22} />}
                 </div>
-                <CardTitle className="text-2xl font-semibold text-foreground">Acesse sua conta</CardTitle>
+                <CardTitle className="text-2xl font-semibold text-foreground">
+                  {mode === "login" ? "Acesse sua conta" : "Crie sua conta"}
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Entre para sincronizar seus dados, acompanhar metas e receber alertas inteligentes.
+                  {mode === "login"
+                    ? "Entre para sincronizar seus dados, acompanhar metas e receber alertas inteligentes."
+                    : "Crie seu acesso em poucos segundos para manter suas corridas sempre sincronizadas."}
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Button type="button" variant="outline" className="w-full gap-2 text-sm font-medium">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2 text-sm font-medium"
+                  onClick={() => toast.info("Integração com Google em breve.")}
+                  disabled={loading}
+                >
                   <span className="text-lg" role="img" aria-hidden>🌐</span>
                   Continuar com Google
                 </Button>
@@ -105,6 +199,24 @@ const Login = () => {
                   <Separator className="flex-1" />
                 </div>
                 <form className="space-y-4" onSubmit={handleSubmit}>
+                  {mode === "register" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="text-sm font-medium">Nome completo</Label>
+                      <div className="relative">
+                        <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="fullName"
+                          name="fullName"
+                          type="text"
+                          placeholder="Como devemos te chamar?"
+                          autoComplete="name"
+                          required={mode === "register"}
+                          className="pl-9"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
                     <div className="relative">
@@ -117,15 +229,18 @@ const Login = () => {
                         autoComplete="email"
                         required
                         className="pl-9"
+                        disabled={loading}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                      <Link to="#" className="text-xs font-medium text-primary hover:underline">
-                        Esqueci minha senha
-                      </Link>
+                      {mode === "login" && (
+                        <Link to="#" className="text-xs font-medium text-primary hover:underline">
+                          Esqueci minha senha
+                        </Link>
+                      )}
                     </div>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -137,26 +252,48 @@ const Login = () => {
                         autoComplete="current-password"
                         required
                         className="pl-9"
+                        disabled={loading}
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <label className="flex items-center gap-2 text-muted-foreground">
-                      <Checkbox id="remember" name="remember" />
-                      <span>Lembrar de mim</span>
-                    </label>
-                    <span className="text-xs text-muted-foreground">Suporte 24/7 via WhatsApp</span>
-                  </div>
+                  {mode === "login" && (
+                    <div className="flex items-center justify-between text-sm">
+                      <label className="flex items-center gap-2 text-muted-foreground">
+                        <Checkbox id="remember" name="remember" disabled />
+                        <span>Lembrar de mim</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">Suporte 24/7 via WhatsApp</span>
+                    </div>
+                  )}
                   <Button type="submit" disabled={loading} className="w-full gap-2 text-base font-semibold">
-                    Entrar agora
+                    {mode === "login" ? "Entrar agora" : "Criar conta"}
                     <ArrowRight size={18} className={loading ? "animate-pulse" : ""} />
                   </Button>
                 </form>
                 <p className="text-center text-sm text-muted-foreground">
-                  Ainda não tem acesso? {" "}
-                  <Link to="#" className="font-semibold text-primary hover:underline">
-                    Fale com nossa equipe
-                  </Link>
+                  {mode === "login" ? (
+                    <>
+                      Primeira vez aqui?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setMode("register")}
+                        className="font-semibold text-primary hover:underline"
+                      >
+                        Criar conta agora
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Já possui uma conta?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setMode("login")}
+                        className="font-semibold text-primary hover:underline"
+                      >
+                        Fazer login
+                      </button>
+                    </>
+                  )}
                 </p>
                 <p className="text-xs text-center text-muted-foreground">
                   Ao continuar, você concorda com os nossos {" "}

@@ -20,7 +20,7 @@ import {
   getUserProfile,
 } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import TransactionForm from "@/components/TransactionForm";
 import {
   Drawer,
@@ -39,6 +39,65 @@ import { toast } from "sonner";
 import type { TodayStats, WeeklyWorkSummary, UserProfile } from "@/lib/storage";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const GREETING_MESSAGES = [
+  "{greeting}, {name}! Bora bater a meta hoje?",
+  "{greeting}, {name}! Vamos transformar cada corrida em lucro.",
+  "{greeting}, {name}! Hora de acelerar rumo ao próximo recorde.",
+  "{greeting}, {name}! Energia lá em cima pra dominar o app!",
+  "{greeting}, {name}! Vamos fazer esse dia valer cada quilômetro.",
+  "{greeting}, {name}! Confio no seu talento — partiu lucrar?",
+];
+
+const GREETING_STATE_KEY = "roda_plus_greeting_state";
+
+const pickDailyGreetingTemplate = (): string => {
+  if (typeof window === "undefined") {
+    return GREETING_MESSAGES[0];
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const stored = window.localStorage.getItem(GREETING_STATE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { index?: number; date?: string };
+      if (parsed?.date === today && typeof parsed.index === "number") {
+        const safeIndex = Math.abs(parsed.index) % GREETING_MESSAGES.length;
+        return GREETING_MESSAGES[safeIndex];
+      }
+
+      const previousIndex = typeof parsed?.index === "number" ? parsed.index : -1;
+      const nextIndex = (previousIndex + 1 + GREETING_MESSAGES.length) % GREETING_MESSAGES.length;
+      window.localStorage.setItem(
+        GREETING_STATE_KEY,
+        JSON.stringify({ index: nextIndex, date: today }),
+      );
+      return GREETING_MESSAGES[nextIndex];
+    }
+  } catch (_error) {
+    // Ignore storage issues and fall back to default below
+  }
+
+  try {
+    window.localStorage.setItem(
+      GREETING_STATE_KEY,
+      JSON.stringify({ index: 0, date: today }),
+    );
+  } catch (_error) {
+    // Ignore write failures
+  }
+
+  return GREETING_MESSAGES[0];
+};
+
+const resolveGreetingParts = (template: string, greeting: string, name: string) => {
+  const placeholder = "__NAME_PLACEHOLDER__";
+  const withGreeting = template.replace("{greeting}", greeting);
+  const prepared = withGreeting.replace("{name}", placeholder);
+  const [before = "", after = ""] = prepared.split(placeholder);
+  return { before, after };
+};
 
 const getTimeOfDayGreeting = (): "Bom dia" | "Boa tarde" | "Boa noite" => {
   const hour = new Date().getHours();
@@ -213,16 +272,20 @@ const Home = () => {
     : "Motorista Parceiro";
   const firstName = safeName.split(" ").filter(Boolean)[0] ?? safeName;
   const displayName = firstName.length > 0 ? firstName : "Motorista";
+  const greetingTemplate = useMemo(() => pickDailyGreetingTemplate(), []);
+  const greetingParts = useMemo(
+    () => resolveGreetingParts(greetingTemplate, greetingPrefix, displayName),
+    [greetingTemplate, greetingPrefix, displayName],
+  );
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="border-b border-border/40 px-3 py-0.5">
         <div className="mx-auto w-full max-w-md leading-tight">
           <h1 className="text-lg font-semibold text-foreground">
-            {greetingPrefix},{" "}
-            <span className="font-bold text-primary">
-              {displayName}
-            </span>
+            {greetingParts.before}
+            <span className="font-bold text-primary">{displayName}</span>
+            {greetingParts.after}
           </h1>
           <p className="text-[11px] leading-snug text-muted-foreground">
             Seu controle financeiro inteligente

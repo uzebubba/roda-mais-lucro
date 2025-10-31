@@ -11,6 +11,9 @@ import Perfil from "./pages/Perfil";
 import { BottomNav } from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -20,18 +23,78 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<><Home /><BottomNav /></>} />
-            <Route path="/registrar" element={<><Registrar /><BottomNav /></>} />
-            <Route path="/historico" element={<><Historico /><BottomNav /></>} />
-            <Route path="/fixas" element={<><Fixas /><BottomNav /></>} />
-            <Route path="/perfil" element={<><Perfil /><BottomNav /></>} />
-            <Route path="/login" element={<Login />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Home />
+                      <BottomNav />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/registrar"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Registrar />
+                      <BottomNav />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/historico"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Historico />
+                      <BottomNav />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixas"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Fixas />
+                      <BottomNav />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/perfil"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Perfil />
+                      <BottomNav />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/login" element={<Login />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route
+                path="*"
+                element={
+                  <ProtectedRoute>
+                    <NotFound />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

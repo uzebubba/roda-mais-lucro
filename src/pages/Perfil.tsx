@@ -5,15 +5,45 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Perfil = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(() => getUserProfile());
-  const [fullName, setFullName] = useState(profile.fullName);
-  const [email, setEmail] = useState(profile.email ?? "");
+  const metadataName = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "";
+  const [fullName, setFullName] = useState(profile.fullName || metadataName);
+  const [email, setEmail] = useState(profile.email ?? user?.email ?? "");
+  const [isEditing, setIsEditing] = useState(() => profile.fullName === "João Motorista");
+  const displayedEmail = email || user?.email || profile.email || "";
+
+  useEffect(() => {
+    const shouldSyncName = Boolean(metadataName) && profile.fullName === "João Motorista";
+    const shouldSyncEmail = Boolean(user?.email) && profile.email === "joao@email.com";
+
+    if (!shouldSyncName && !shouldSyncEmail) {
+      return;
+    }
+
+    const updated = updateUserProfile({
+      fullName: shouldSyncName ? metadataName : profile.fullName,
+      email: shouldSyncEmail ? (user?.email ?? profile.email) : profile.email,
+    });
+
+    setProfile(updated);
+    if (shouldSyncName) {
+      setFullName(updated.fullName);
+    }
+    if (shouldSyncEmail) {
+      setEmail(updated.email);
+    }
+    if (shouldSyncName || shouldSyncEmail) {
+      setIsEditing(false);
+    }
+  }, [metadataName, profile.fullName, profile.email, user?.email]);
 
   const handleWhatsApp = () => {
     window.open("https://wa.me/5511999999999?text=Olá, preciso de ajuda com o Roda+ Controle", "_blank");
@@ -45,11 +75,28 @@ const Perfil = () => {
     setFullName(updated.fullName);
     setEmail(updated.email);
     toast.success("Perfil atualizado com sucesso!");
+    setIsEditing(false);
+  };
+
+  const handleStartEditing = () => {
+    setIsEditing(true);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Você saiu da sua conta.");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Não foi possível encerrar a sessão.";
+      toast.error(message);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center gap-3 animate-fade-in">
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center justify-between gap-3 animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
@@ -58,50 +105,70 @@ const Perfil = () => {
         >
           <ArrowLeft size={20} />
         </Button>
-        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Perfil</h1>
+        <h1 className="flex-1 text-center text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+          Perfil
+        </h1>
+        <Button variant="outline" size="sm" onClick={handleSignOut}>
+          Sair
+        </Button>
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
         {/* User Info */}
         <Card className="p-6 glass-card animate-fade-in">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                {profile.avatarInitials && profile.avatarInitials.length > 0
-                  ? profile.avatarInitials
-                  : "JM"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-xl font-bold text-foreground">{profile.fullName}</h2>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                  {profile.avatarInitials && profile.avatarInitials.length > 0
+                    ? profile.avatarInitials
+                    : "JM"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">{profile.fullName}</h2>
+                <p className="text-sm text-muted-foreground">{displayedEmail}</p>
+              </div>
             </div>
+            {!isEditing && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleStartEditing}
+                className="h-8 text-sm font-medium text-primary hover:text-primary/80"
+              >
+                Editar dados
+              </Button>
+            )}
           </div>
-          <div className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Seu nome</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                placeholder="Digite como quer ser chamado"
-              />
+          {isEditing && (
+            <div className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Seu nome</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  placeholder="Digite como quer ser chamado"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="seu@email.com"
+                />
+              </div>
+              <Button className="w-full gap-2" onClick={handleSaveProfile}>
+                <Save size={16} />
+                Salvar dados
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="seu@email.com"
-              />
-            </div>
-            <Button className="w-full gap-2" onClick={handleSaveProfile}>
-              <Save size={16} />
-              Salvar dados
-            </Button>
-          </div>
+          )}
         </Card>
 
         {/* Plan Card */}
