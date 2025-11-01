@@ -1,25 +1,18 @@
-import { TrendingUp, TrendingDown, Wallet, Plus, Minus } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Plus,
+  Minus,
+  Loader2,
+} from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { DailyStatsCard } from "@/components/DailyStatsCard";
 import { GoalCard } from "@/components/GoalCard";
 import { EditGoalDialog } from "@/components/EditGoalDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  getWeeklyProfits,
-  getTodayStats,
-  getDailyGoal,
-  getMonthlyGoal,
-  setDailyGoal as persistDailyGoal,
-  setMonthlyGoal as persistMonthlyGoal,
-  getTransactionsByPeriod,
-  getWeeklyWorkHistory,
-  startWorkSession,
-  endWorkSession,
-  getUserProfile,
-} from "@/lib/storage";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
-import { useState, useEffect, useCallback, useMemo } from "react";
 import TransactionForm from "@/components/TransactionForm";
 import {
   Drawer,
@@ -34,8 +27,28 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  filterTransactionsByPeriod,
+  getTransactions,
+  getTodayStats,
+  getWeeklyWorkHistory,
+  getWeeklyProfits,
+  startWorkSession,
+  endWorkSession,
+  getUserProfile,
+  setDailyGoal as persistDailyGoal,
+  setMonthlyGoal as persistMonthlyGoal,
+  getWorkSessions,
+  type TodayStats,
+  type WeeklyWorkSummary,
+  type UserProfile,
+  type WorkSession,
+  type Transaction,
+} from "@/lib/supabase-storage";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { toast } from "sonner";
-import type { TodayStats, WeeklyWorkSummary, UserProfile } from "@/lib/storage";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -69,7 +82,8 @@ const pickDailyGreetingTemplate = (): string => {
       }
 
       const previousIndex = typeof parsed?.index === "number" ? parsed.index : -1;
-      const nextIndex = (previousIndex + 1 + GREETING_MESSAGES.length) % GREETING_MESSAGES.length;
+      const nextIndex =
+        (previousIndex + 1 + GREETING_MESSAGES.length) % GREETING_MESSAGES.length;
       window.localStorage.setItem(
         GREETING_STATE_KEY,
         JSON.stringify({ index: nextIndex, date: today }),
@@ -135,80 +149,116 @@ const formatMinutesShort = (totalMinutes: number): string => {
 };
 
 const isSameDay = (a: Date, b: Date): boolean =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const defaultTodayStats: TodayStats = {
+  trips: 0,
+  workMinutes: 0,
+  profit: 0,
+  avgProfitPerTrip: 0,
+  isWorking: false,
+  activeSessionStart: null,
+};
 
 const Home = () => {
-  const [totals, setTotals] = useState({ income: 0, expenses: 0, profit: 0 });
-  const [weeklyData, setWeeklyData] = useState<any[]>([]);
-  const initialTodayStats = (): TodayStats => {
-    try {
-      return getTodayStats();
-    } catch (_error) {
-      return {
-        trips: 0,
-        workMinutes: 0,
-        profit: 0,
-        avgProfitPerTrip: 0,
-        isWorking: false,
-        activeSessionStart: null,
-      };
-    }
-  };
-  const initialWeeklyWorkHistory = (): WeeklyWorkSummary[] => {
-    try {
-      return getWeeklyWorkHistory();
-    } catch (_error) {
-      return [];
-    }
-  };
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => getUserProfile());
-  const [todayStats, setTodayStats] = useState<TodayStats>(initialTodayStats);
-  const [weeklyWorkHistory, setWeeklyWorkHistory] = useState<WeeklyWorkSummary[]>(initialWeeklyWorkHistory);
-  const [dailyGoal, setDailyGoalState] = useState(() => getDailyGoal());
-  const [monthlyGoal, setMonthlyGoalState] = useState(() => getMonthlyGoal());
-  const [monthlyProgress, setMonthlyProgress] = useState(0);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user?.id);
+  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("today");
   const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [activeType, setActiveType] = useState<"income" | "expense" | null>(null);
   const [isWorkHistoryOpen, setIsWorkHistoryOpen] = useState(false);
-  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("today");
+  const [todayStats, setTodayStatsState] = useState<TodayStats>(defaultTodayStats);
+  const [weeklyWorkHistory, setWeeklyWorkHistoryState] = useState<WeeklyWorkSummary[]>([]);
+  const [weeklyData, setWeeklyData] = useState<Array<{ day: string; lucro: number }>>([]);
 
-  const refreshWorkData = useCallback(() => {
-    setTodayStats(getTodayStats());
-    setWeeklyWorkHistory(getWeeklyWorkHistory());
-  }, []);
+  const transactionsQuery = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+    enabled: isAuthenticated,
+    retry: false,
+  });
 
-  const loadDashboardData = useCallback(() => {
-    const scopedTransactions = getTransactionsByPeriod(summaryPeriod);
-    const scopedIncome = scopedTransactions
-      .filter((transaction) => transaction.type === "income")
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
-    const scopedExpenses = scopedTransactions
-      .filter((transaction) => transaction.type === "expense")
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const workSessionsQuery = useQuery({
+    queryKey: ["workSessions"],
+    queryFn: getWorkSessions,
+    enabled: isAuthenticated,
+    retry: false,
+  });
 
-    setTotals({
-      income: scopedIncome,
-      expenses: scopedExpenses,
-      profit: scopedIncome - scopedExpenses,
-    });
-    setWeeklyData(getWeeklyProfits());
-    refreshWorkData();
-    setUserProfile(getUserProfile());
-    setDailyGoalState(getDailyGoal());
-    setMonthlyGoalState(getMonthlyGoal());
-    const monthTransactions = getTransactionsByPeriod("month");
-    const monthIncome = monthTransactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
-    const monthExpenses = monthTransactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + t.amount, 0);
-    setMonthlyProgress(monthIncome - monthExpenses);
-  }, [refreshWorkData, summaryPeriod]);
+  const profileQuery = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: getUserProfile,
+    enabled: isAuthenticated,
+    retry: false,
+  });
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    if (transactionsQuery.error) {
+      const error = transactionsQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar suas transações.";
+      toast.error(message);
+    }
+  }, [transactionsQuery.error]);
+
+  useEffect(() => {
+    if (workSessionsQuery.error) {
+      const error = workSessionsQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar seus turnos de trabalho.";
+      toast.error(message);
+    }
+  }, [workSessionsQuery.error]);
+
+  useEffect(() => {
+    if (profileQuery.error) {
+      const error = profileQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar o perfil do usuário.";
+      toast.error(message);
+    }
+  }, [profileQuery.error]);
+
+  const transactions = transactionsQuery.data ?? [];
+  const workSessions = workSessionsQuery.data ?? [];
+  const userProfile = profileQuery.data;
+
+  const refreshDerivedData = useCallback(
+    async (currentTransactions: Transaction[], sessions: WorkSession[]) => {
+      try {
+        const [stats, history, profits] = await Promise.all([
+          getTodayStats(currentTransactions, sessions),
+          getWeeklyWorkHistory(sessions),
+          getWeeklyProfits(currentTransactions),
+        ]);
+        setTodayStatsState(stats);
+        setWeeklyWorkHistoryState(history);
+        setWeeklyData(profits);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível atualizar os indicadores do dashboard.";
+        toast.error(message);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (transactionsQuery.data && workSessionsQuery.data) {
+      void refreshDerivedData(transactionsQuery.data, workSessionsQuery.data);
+    }
+  }, [transactionsQuery.data, workSessionsQuery.data, refreshDerivedData]);
 
   useEffect(() => {
     if (!todayStats.isWorking) {
@@ -216,46 +266,53 @@ const Home = () => {
     }
 
     const interval = window.setInterval(() => {
-      refreshWorkData();
+      queryClient.invalidateQueries({ queryKey: ["workSessions"] });
     }, 30000);
 
     return () => {
       window.clearInterval(interval);
     };
-  }, [todayStats.isWorking, refreshWorkData]);
+  }, [todayStats.isWorking, queryClient]);
 
-  const handleTransactionSaved = () => {
-    loadDashboardData();
-    setActiveType(null);
-  };
+  const totals = useMemo(() => {
+    const scoped = filterTransactionsByPeriod(transactions, summaryPeriod);
+    const income = scoped
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const expenses = scoped
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    return {
+      income,
+      expenses,
+      profit: income - expenses,
+    };
+  }, [transactions, summaryPeriod]);
 
-  const handleGoalsUpdated = (daily: number, monthly: number) => {
-    persistDailyGoal(daily);
-    persistMonthlyGoal(monthly);
-    setDailyGoalState(daily);
-    setMonthlyGoalState(monthly);
-    loadDashboardData();
-  };
+  const monthTotals = useMemo(() => {
+    const scoped = filterTransactionsByPeriod(transactions, "month");
+    const income = scoped
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const expenses = scoped
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    return {
+      income,
+      expenses,
+      profit: income - expenses,
+    };
+  }, [transactions]);
 
-  const handleStartShift = () => {
-    startWorkSession();
-    refreshWorkData();
-    toast.success("Expediente iniciado!");
-  };
+  const dailyGoal = userProfile?.dailyGoal ?? 300;
+  const monthlyGoal = userProfile?.monthlyGoal ?? 6000;
 
-  const handleStopShift = () => {
-    const session = endWorkSession();
-    refreshWorkData();
-    if (session) {
-      toast.success("Expediente finalizado!");
-    } else {
-      toast.warning("Nenhum expediente ativo para finalizar.");
-    }
-  };
-
-  const workTimeLabel = formatMinutesLong(todayStats.workMinutes);
-  const weeklyTotalMinutes = weeklyWorkHistory.reduce((sum, entry) => sum + entry.totalMinutes, 0);
+  const weeklyTotalMinutes = weeklyWorkHistory.reduce(
+    (sum, entry) => sum + entry.totalMinutes,
+    0,
+  );
   const weeklyTotalLabel = formatMinutesLong(weeklyTotalMinutes);
+
   const now = new Date();
   const weeklyHistoryItems = weeklyWorkHistory.map((entry) => {
     const date = new Date(entry.date);
@@ -272,25 +329,121 @@ const Home = () => {
     return {
       key: entry.date,
       dayLabel: DAY_NAMES[date.getDay()],
-      dateLabel: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date),
+      dateLabel: new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      }).format(date),
       durationLabel: formatMinutesShort(entry.totalMinutes),
       isToday: isSameDay(date, now),
     };
   });
+
   const greetingPrefix = getTimeOfDayGreeting();
-  const safeName = userProfile.fullName && userProfile.fullName.trim().length > 0
-    ? userProfile.fullName.trim()
-    : "Motorista Parceiro";
+  const greetingTemplate = useMemo(() => pickDailyGreetingTemplate(), []);
+  const safeName =
+    userProfile?.fullName && userProfile.fullName.trim().length > 0
+      ? userProfile.fullName.trim()
+      : "Motorista Parceiro";
   const firstName = safeName.split(" ").filter(Boolean)[0] ?? safeName;
   const displayName = firstName.length > 0 ? firstName : "Motorista";
-  const greetingTemplate = useMemo(() => pickDailyGreetingTemplate(), []);
   const greetingParts = useMemo(
     () => resolveGreetingParts(greetingTemplate, greetingPrefix, displayName),
     [greetingTemplate, greetingPrefix, displayName],
   );
+
+  const startShiftMutation = useMutation({
+    mutationFn: startWorkSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workSessions"] });
+      toast.success("Expediente iniciado!");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível iniciar o expediente.";
+      toast.error(message);
+    },
+  });
+
+  const stopShiftMutation = useMutation({
+    mutationFn: endWorkSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workSessions"] });
+      toast.success("Expediente finalizado!");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível finalizar o expediente.";
+      toast.error(message);
+    },
+  });
+
+  const setDailyGoalMutation = useMutation({
+    mutationFn: persistDailyGoal,
+  });
+
+  const setMonthlyGoalMutation = useMutation({
+    mutationFn: persistMonthlyGoal,
+  });
+
+  const handleTransactionSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    setActiveType(null);
+  };
+
+  const handleGoalsUpdated = (daily: number, monthly: number) => {
+    void (async () => {
+      try {
+        await Promise.all([
+          setDailyGoalMutation.mutateAsync(daily),
+          setMonthlyGoalMutation.mutateAsync(monthly),
+        ]);
+        await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        toast.success("Metas atualizadas com sucesso!");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível atualizar as metas.";
+        toast.error(message);
+      }
+    })();
+  };
+
+  const handleStartShift = () => {
+    startShiftMutation.mutate();
+  };
+
+  const handleStopShift = () => {
+    stopShiftMutation.mutate();
+  };
+
   const handleSummaryPeriodChange = (value: SummaryPeriod) => {
     setSummaryPeriod(value);
   };
+
+  const resolvedTodayStats = todayStats ?? defaultTodayStats;
+  const workTimeLabel = formatMinutesLong(resolvedTodayStats.workMinutes);
+
+  const weeklyChartData = weeklyData.length > 0 ? weeklyData : DAY_NAMES.map((day) => ({
+    day,
+    lucro: 0,
+  }));
+
+  if (
+    transactionsQuery.isLoading ||
+    workSessionsQuery.isLoading ||
+    profileQuery.isLoading
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -308,7 +461,6 @@ const Home = () => {
       </header>
 
       <main className="p-4 space-y-6 max-w-md mx-auto">
-        {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-3 animate-fade-in">
           <SummaryCard
             title="Ganhei"
@@ -330,7 +482,6 @@ const Home = () => {
           />
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 animate-fade-in">
           <Button
             size="lg"
@@ -351,26 +502,24 @@ const Home = () => {
           </Button>
         </div>
 
-        {/* Daily Stats Card */}
         <DailyStatsCard
-          trips={todayStats.trips}
+          trips={resolvedTodayStats.trips}
           workTime={workTimeLabel}
-          avgProfitPerTrip={todayStats.avgProfitPerTrip}
-          isWorking={todayStats.isWorking}
+          avgProfitPerTrip={resolvedTodayStats.avgProfitPerTrip}
+          isWorking={resolvedTodayStats.isWorking}
           onStartShift={handleStartShift}
           onStopShift={handleStopShift}
           weeklyTotal={weeklyTotalLabel}
-          activeSessionStart={todayStats.activeSessionStart}
+          activeSessionStart={resolvedTodayStats.activeSessionStart}
           onOpenHistory={() => setIsWorkHistoryOpen(true)}
           summaryPeriod={summaryPeriod}
           onSummaryPeriodChange={handleSummaryPeriodChange}
         />
 
-        {/* Goal Card */}
         <GoalCard
           views={[
-            { type: "daily", goal: dailyGoal, current: todayStats.profit },
-            { type: "monthly", goal: monthlyGoal, current: monthlyProgress },
+            { type: "daily", goal: dailyGoal, current: resolvedTodayStats.profit },
+            { type: "monthly", goal: monthlyGoal, current: monthTotals.profit },
           ]}
           activeType={goalView}
           onTypeChange={(type) => setGoalView(type)}
@@ -383,7 +532,6 @@ const Home = () => {
           }
         />
 
-        {/* Weekly Chart */}
         <Card className="p-5 glass-card">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -392,7 +540,7 @@ const Home = () => {
             Lucro dos últimos 7 dias
           </h2>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={weeklyData}>
+            <BarChart data={weeklyChartData}>
               <XAxis
                 dataKey="day"
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
@@ -403,10 +551,14 @@ const Home = () => {
                 axisLine={false}
               />
               <Bar dataKey="lucro" radius={[12, 12, 0, 0]} maxBarSize={50}>
-                {weeklyData.map((entry, index) => (
+                {weeklyChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.lucro >= 0 ? "hsl(var(--primary))" : "hsl(var(--destructive))"}
+                    fill={
+                      entry.lucro >= 0
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--destructive))"
+                    }
                     opacity={0.9}
                   />
                 ))}
@@ -433,10 +585,7 @@ const Home = () => {
               </DrawerTitle>
             </DrawerHeader>
             <div className="px-6 pb-6">
-              <TransactionForm
-                initialType={activeType}
-                onSuccess={handleTransactionSaved}
-              />
+              <TransactionForm initialType={activeType} onSuccess={handleTransactionSaved} />
             </div>
           </DrawerContent>
         )}

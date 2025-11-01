@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Minus, Mic, MicOff } from "lucide-react";
+import { Plus, Minus, Mic, MicOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { addTransaction, Transaction } from "@/lib/storage";
+import { addTransaction, Transaction } from "@/lib/supabase-storage";
 import { toast } from "sonner";
 import { useSpeechRecognition } from "@/hooks/useSpeech";
 import { parseTransactionSpeech } from "@/lib/speech-parser";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type TransactionType = "income" | "expense";
 
@@ -36,6 +37,29 @@ const TransactionForm = ({
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState("");
   const [category, setCategory] = useState("");
+
+  const queryClient = useQueryClient();
+
+  const addTransactionMutation = useMutation({
+    mutationFn: addTransaction,
+    onSuccess: (savedTransaction, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success(
+        variables.type === "income"
+          ? "Ganho registrado!"
+          : "Gasto registrado!",
+      );
+      onSuccess?.(savedTransaction);
+      resetForm(variables.type);
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a transação.";
+      toast.error(message);
+    },
+  });
 
   // Speech
   const speech = useSpeechRecognition();
@@ -97,26 +121,34 @@ const TransactionForm = ({
       type,
       amount: parseFloat(amount),
       date: new Date(date).toISOString(),
-      description: description || (type === "income" ? "Corridas do dia" : "Despesa"),
+      description:
+        description || (type === "income" ? "Corridas do dia" : "Despesa"),
       ...(type === "income" && platform && { platform }),
       ...(type === "expense" && category && { category }),
     };
 
-    const savedTransaction = addTransaction(transactionData);
-    toast.success(type === "income" ? "Ganho registrado!" : "Gasto registrado!");
-    onSuccess?.(savedTransaction);
-    resetForm(type);
+    addTransactionMutation.mutate(transactionData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
-      <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)} className="space-y-4">
+      <Tabs
+        value={type}
+        onValueChange={(value) => setType(value as TransactionType)}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-2 h-12 bg-secondary/50 backdrop-blur-sm">
-          <TabsTrigger value="income" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300">
+          <TabsTrigger
+            value="income"
+            className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300"
+          >
             <Plus size={18} />
             Ganho
           </TabsTrigger>
-          <TabsTrigger value="expense" className="gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive transition-all duration-300">
+          <TabsTrigger
+            value="expense"
+            className="gap-2 data-[state=active]:bg-destructive/10 data-[state=active]:text-destructive transition-all duration-300"
+          >
             <Minus size={18} />
             Gasto
           </TabsTrigger>
@@ -127,16 +159,31 @@ const TransactionForm = ({
           {micSupported && (
             <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
               <div className="text-xs text-muted-foreground">
-                Preencher por voz {lastHeard && <span className="text-[11px]">• "{lastHeard}"</span>}
+                Preencher por voz{" "}
+                {lastHeard && (
+                  <span className="text-[11px]">• "{lastHeard}"</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {speech.listening ? (
-                  <Button variant="destructive" size="sm" onClick={speech.stop} className="gap-1">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={speech.stop}
+                    className="gap-1"
+                    type="button"
+                  >
                     <MicOff size={14} />
                     Parar
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={speech.start} className="gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={speech.start}
+                    className="gap-1"
+                    type="button"
+                  >
                     <Mic size={14} />
                     Falar
                   </Button>
@@ -144,26 +191,29 @@ const TransactionForm = ({
               </div>
             </div>
           )}
+
           <div>
             <Label htmlFor="date">Data</Label>
             <Input
               id="date"
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(event) => setDate(event.target.value)}
               className="mt-1"
             />
           </div>
 
           <div>
-            <Label htmlFor="amount" className="text-foreground font-medium">Valor (R$)</Label>
+            <Label htmlFor="amount" className="text-foreground font-medium">
+              Valor (R$)
+            </Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
               placeholder="0,00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(event) => setAmount(event.target.value)}
               className="mt-1 text-lg font-semibold"
             />
           </div>
@@ -210,7 +260,7 @@ const TransactionForm = ({
               type="text"
               placeholder="Ex: Corridas do dia"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(event) => setDescription(event.target.value)}
               className="mt-1"
             />
           </div>
@@ -221,8 +271,16 @@ const TransactionForm = ({
         type="submit"
         size="lg"
         className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
+        disabled={addTransactionMutation.isPending}
       >
-        {submitLabel}
+        {addTransactionMutation.isPending ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Salvando...
+          </>
+        ) : (
+          submitLabel
+        )}
       </Button>
     </form>
   );
