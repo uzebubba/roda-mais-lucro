@@ -14,43 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      fixed_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          due_day: number
+          id: string
+          name: string
+          paid: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_day: number
+          id?: string
+          name: string
+          paid?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_day?: number
+          id?: string
+          name?: string
+          paid?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fuel_entries: {
+        Row: {
+          consumption: number | null
+          cost_per_km: number | null
+          created_at: string
+          id: string
+          km_current: number
+          km_since_last: number
+          liters: number
+          mode: string
+          price_per_liter: number
+          total_cost: number
+          user_id: string
+        }
+        Insert: {
+          consumption?: number | null
+          cost_per_km?: number | null
+          created_at?: string
+          id?: string
+          km_current: number
+          km_since_last?: number
+          liters: number
+          mode: string
+          price_per_liter: number
+          total_cost: number
+          user_id: string
+        }
+        Update: {
+          consumption?: number | null
+          cost_per_km?: number | null
+          created_at?: string
+          id?: string
+          km_current?: number
+          km_since_last?: number
+          liters?: number
+          mode?: string
+          price_per_liter?: number
+          total_cost?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_audit_logs: {
         Row: {
           created_at: string
-          event_type: "login_success" | "login_failure" | "logout" | "password_reset"
+          event_type: string
           id: string
-          ip_address: string | null
+          ip_address: unknown
           metadata: Json
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string
-          event_type: "login_success" | "login_failure" | "logout" | "password_reset"
+          event_type: string
           id?: string
-          ip_address?: string | null
+          ip_address?: unknown
           metadata?: Json
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string
-          event_type?: "login_success" | "login_failure" | "logout" | "password_reset"
+          event_type?: string
           id?: string
-          ip_address?: string | null
+          ip_address?: unknown
           metadata?: Json
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "login_audit_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      oil_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          interval_km: number
+          last_change_date: string
+          last_change_km: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interval_km?: number
+          last_change_date: string
+          last_change_km: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interval_km?: number
+          last_change_date?: string
+          last_change_km?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          date: string
+          description: string
+          id: string
+          platform: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          platform?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          platform?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {
@@ -89,25 +225,90 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_states: {
+        Row: {
+          current_km: number
+          id: string
+          last_updated: string
+          user_id: string
+        }
+        Insert: {
+          current_km: number
+          id?: string
+          last_updated?: string
+          user_id: string
+        }
+        Update: {
+          current_km?: number
+          id?: string
+          last_updated?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_sessions: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          id: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "driver"
+      user_role: "driver" | "manager" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -235,6 +436,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "manager", "driver"],
       user_role: ["driver", "manager", "admin"],
     },
   },
