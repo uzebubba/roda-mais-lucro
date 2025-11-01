@@ -71,3 +71,29 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Supabase
+
+> 🇧🇷 O projeto já está conectado ao Supabase (`project_id = qwjfimrqpomeqlsrquej`). Siga os passos abaixo para configurar sua máquina e criar novas tabelas com migrações versionadas.
+
+1. Copie `.env.example` para `.env`. O arquivo já vem preenchido com o `project_ref` informado (`qwjfimrqpomeqlsrquej`).
+2. Instale o [Supabase CLI](https://supabase.com/docs/guides/cli) e faça login (`supabase login`), ou use `npx supabase@latest` se não quiser instalar globalmente.
+3. Vincule o diretório local ao projeto remoto (executa uma única vez):
+   ```bash
+   supabase link --project-ref qwjfimrqpomeqlsrquej
+   ```
+4. Crie uma nova migração sempre que quiser adicionar/alterar tabelas:
+   ```bash
+   supabase migration new minha_nova_tabela
+   # edite o arquivo gerado em supabase/migrations/<timestamp>_minha_nova_tabela.sql
+   supabase db push
+   ```
+5. Gere os tipos TypeScript atualizados após aplicar migrações (mantém `src/integrations/supabase/types.ts` em sincronia):
+   ```bash
+   supabase gen types typescript --linked --schema public \
+     > src/integrations/supabase/types.ts
+   ```
+   - Ou execute `npm run supabase:types` para rodar o comando acima automaticamente.
+6. Para aplicar migrações pendentes ao banco remoto/local, execute `npm run supabase:push`.
+
+Depois disso, importe o cliente com tipagem completa através de `import { supabase } from "@/integrations/supabase/client";` e use `Tables<"nome_da_tabela">` das types geradas para trabalhar com os dados.

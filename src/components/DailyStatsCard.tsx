@@ -1,7 +1,13 @@
-import { Car, Clock, TrendingUp, Play, Square, History } from "lucide-react";
+import { Car, Clock, TrendingUp, Play, Square, History, CalendarRange } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DailyStatsCardProps {
   trips: number;
@@ -13,6 +19,8 @@ interface DailyStatsCardProps {
   weeklyTotal: string;
   activeSessionStart?: string | null;
   onOpenHistory: () => void;
+  summaryPeriod: "today" | "week" | "month";
+  onSummaryPeriodChange: (value: "today" | "week" | "month") => void;
 }
 
 const formatStartTime = (iso?: string | null): string | null => {
@@ -41,8 +49,12 @@ export const DailyStatsCard = ({
   weeklyTotal,
   activeSessionStart,
   onOpenHistory,
+  summaryPeriod,
+  onSummaryPeriodChange,
 }: DailyStatsCardProps) => {
   const startTimeLabel = formatStartTime(activeSessionStart);
+  const periodLabel =
+    summaryPeriod === "today" ? "Hoje" : summaryPeriod === "week" ? "Semana" : "Mês";
 
   return (
     <Card className="p-5 space-y-5 glass-card animate-fade-in">
@@ -50,12 +62,38 @@ export const DailyStatsCard = ({
         <div>
           <h2 className="text-lg font-semibold text-foreground">Meu Dia</h2>
           <p className="text-xs text-muted-foreground">
-            Acompanhe suas corridas e jornada de trabalho
+            Acompanhe suas
+            <span className="block">corridas e jornada de trabalho</span>
           </p>
         </div>
-        <Badge variant={isWorking ? "default" : "secondary"}>
-          {isWorking ? "Em andamento" : "Sem expediente"}
-        </Badge>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex flex-col items-center gap-1 rounded-full border-border/70 bg-background/80 px-3 py-2 text-[10px] font-semibold text-muted-foreground shadow-sm transition hover:bg-muted"
+              >
+                <CalendarRange className="h-3.5 w-3.5" />
+                {periodLabel}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32 text-xs font-medium">
+              <DropdownMenuItem onClick={() => onSummaryPeriodChange("today")} className="text-muted-foreground">
+                Hoje
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSummaryPeriodChange("week")} className="text-muted-foreground">
+                Semana
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSummaryPeriodChange("month")} className="text-muted-foreground">
+                Mês
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Badge variant={isWorking ? "default" : "secondary"}>
+            {isWorking ? "Em andamento" : "Sem expediente"}
+          </Badge>
+        </div>
       </div>
 
       <div className="space-y-3">

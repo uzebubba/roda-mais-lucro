@@ -6,7 +6,6 @@ import { EditGoalDialog } from "@/components/EditGoalDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  calculateTotals,
   getWeeklyProfits,
   getTodayStats,
   getDailyGoal,
@@ -39,6 +38,8 @@ import { toast } from "sonner";
 import type { TodayStats, WeeklyWorkSummary, UserProfile } from "@/lib/storage";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+type SummaryPeriod = "today" | "week" | "month";
 
 const GREETING_MESSAGES = [
   "{greeting}, {name}! Bora bater a meta hoje?",
@@ -99,11 +100,8 @@ const resolveGreetingParts = (template: string, greeting: string, name: string) 
   return { before, after };
 };
 
-const getTimeOfDayGreeting = (): "Bom dia" | "Boa tarde" | "Boa noite" => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+const getTimeOfDayGreeting = (): "Oii" => {
+  return "Oii";
 };
 
 const formatMinutesLong = (totalMinutes: number): string => {
@@ -172,6 +170,7 @@ const Home = () => {
   const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [activeType, setActiveType] = useState<"income" | "expense" | null>(null);
   const [isWorkHistoryOpen, setIsWorkHistoryOpen] = useState(false);
+  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("today");
 
   const refreshWorkData = useCallback(() => {
     setTodayStats(getTodayStats());
@@ -179,7 +178,19 @@ const Home = () => {
   }, []);
 
   const loadDashboardData = useCallback(() => {
-    setTotals(calculateTotals());
+    const scopedTransactions = getTransactionsByPeriod(summaryPeriod);
+    const scopedIncome = scopedTransactions
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const scopedExpenses = scopedTransactions
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    setTotals({
+      income: scopedIncome,
+      expenses: scopedExpenses,
+      profit: scopedIncome - scopedExpenses,
+    });
     setWeeklyData(getWeeklyProfits());
     refreshWorkData();
     setUserProfile(getUserProfile());
@@ -193,7 +204,7 @@ const Home = () => {
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
     setMonthlyProgress(monthIncome - monthExpenses);
-  }, [refreshWorkData]);
+  }, [refreshWorkData, summaryPeriod]);
 
   useEffect(() => {
     loadDashboardData();
@@ -277,10 +288,13 @@ const Home = () => {
     () => resolveGreetingParts(greetingTemplate, greetingPrefix, displayName),
     [greetingTemplate, greetingPrefix, displayName],
   );
+  const handleSummaryPeriodChange = (value: SummaryPeriod) => {
+    setSummaryPeriod(value);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b border-border/40 px-3 py-0.5">
+      <header className="border-b border-border/40 px-3 py-1.5">
         <div className="mx-auto w-full max-w-md leading-tight">
           <h1 className="text-lg font-semibold text-foreground">
             {greetingParts.before}
@@ -348,6 +362,8 @@ const Home = () => {
           weeklyTotal={weeklyTotalLabel}
           activeSessionStart={todayStats.activeSessionStart}
           onOpenHistory={() => setIsWorkHistoryOpen(true)}
+          summaryPeriod={summaryPeriod}
+          onSummaryPeriodChange={handleSummaryPeriodChange}
         />
 
         {/* Goal Card */}
