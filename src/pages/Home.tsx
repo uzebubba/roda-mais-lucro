@@ -6,6 +6,8 @@ import {
   Plus,
   Minus,
   Loader2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { DailyStatsCard } from "@/components/DailyStatsCard";
@@ -49,6 +51,8 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { hasLegacyData } from "@/lib/local-migration";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -166,6 +170,7 @@ const Home = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user?.id);
+  const navigate = useNavigate();
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("today");
   const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [activeType, setActiveType] = useState<"income" | "expense" | null>(null);
@@ -173,6 +178,7 @@ const Home = () => {
   const [todayStats, setTodayStatsState] = useState<TodayStats>(defaultTodayStats);
   const [weeklyWorkHistory, setWeeklyWorkHistoryState] = useState<WeeklyWorkSummary[]>([]);
   const [weeklyData, setWeeklyData] = useState<Array<{ day: string; lucro: number }>>([]);
+  const [showMigrationBanner, setShowMigrationBanner] = useState(false);
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions"],
@@ -227,6 +233,14 @@ const Home = () => {
       toast.error(message);
     }
   }, [profileQuery.error]);
+
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === "undefined") {
+      setShowMigrationBanner(false);
+      return;
+    }
+    setShowMigrationBanner(hasLegacyData());
+  }, [isAuthenticated]);
 
   const transactions = transactionsQuery.data ?? [];
   const workSessions = workSessionsQuery.data ?? [];
@@ -461,6 +475,44 @@ const Home = () => {
       </header>
 
       <main className="p-4 space-y-6 max-w-md mx-auto">
+        {showMigrationBanner && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-yellow-400/40 bg-yellow-50/80 px-4 py-3 text-yellow-900 shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-semibold">
+                  Detectamos dados salvos localmente.
+                </p>
+                <p className="text-xs leading-relaxed">
+                  Migre para a nuvem e mantenha todas as informações sincronizadas com a sua
+                  conta.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" className="h-8" onClick={() => navigate("/migrate")}>
+                    Migrar agora
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs text-yellow-900 hover:text-yellow-900"
+                    onClick={() => setShowMigrationBanner(false)}
+                  >
+                    Agora não
+                  </Button>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="rounded-full p-1 text-yellow-900/80 transition hover:bg-yellow-200/40"
+                onClick={() => setShowMigrationBanner(false)}
+                aria-label="Fechar aviso de migração"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3 animate-fade-in">
           <SummaryCard
             title="Ganhei"

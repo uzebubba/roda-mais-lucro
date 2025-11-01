@@ -97,3 +97,14 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 6. Para aplicar migrações pendentes ao banco remoto/local, execute `npm run supabase:push`.
 
 Depois disso, importe o cliente com tipagem completa através de `import { supabase } from "@/integrations/supabase/client";` e use `Tables<"nome_da_tabela">` das types geradas para trabalhar com os dados.
+
+### Realtime, segurança e Edge Functions
+
+- As migrações `20251102000100_enable_realtime.sql` e `20251102000200_validate_transaction.sql` configuram o `REPLICA IDENTITY` para todas as tabelas usadas em tempo real e adicionam a trigger `validate_transaction()` (incluindo `SET search_path`) para validar valores negativos antes de inserir novas transações. Execute `npm run supabase:push` para aplicar.
+- O Edge Function `supabase/functions/rate-limit` implementa um limitador de 60 transações por minuto por usuário. Para publicar:
+  ```bash
+  supabase functions deploy rate-limit
+  supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+  ```
+  Utilize-o antes de criar novas transações (ex.: do front-end, faça um `fetch` para o endpoint da função e bloqueie o envio caso retorne HTTP `429`).
+- **Proteção contra senhas vazadas:** no painel do Supabase acesse `Authentication > Providers > Email` e habilite a opção “Enforce password breach detection”. Isso garante que novas senhas sejam verificadas em bases públicas de vazamentos.

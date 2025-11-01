@@ -915,6 +915,10 @@ export const setDailyGoal = async (amount: number): Promise<void> => {
     .update({ metadata })
     .eq("id", profile.id);
   if (error) {
+    if (isPermissionDenied(error)) {
+      logPermissionFallback("user_profiles.metadata (dailyGoal)", error);
+      return;
+    }
     throw error;
   }
 };
@@ -937,6 +941,10 @@ export const setMonthlyGoal = async (amount: number): Promise<void> => {
     .update({ metadata })
     .eq("id", profile.id);
   if (error) {
+    if (isPermissionDenied(error)) {
+      logPermissionFallback("user_profiles.metadata (monthlyGoal)", error);
+      return;
+    }
     throw error;
   }
 };
@@ -1096,23 +1104,61 @@ export const updateUserProfile = async (
     updated_at: nowIso(),
   };
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("user_profiles")
     .update(payload)
-    .eq("id", profile.id)
-    .select()
-    .single();
+    .eq("id", profile.id);
   if (error) {
+    if (isPermissionDenied(error)) {
+      logPermissionFallback("user_profiles.update", error);
+      const goals = mergeMetadataGoals(profile.metadata);
+      const fallbackFullName =
+        nextFullName.length > 0 ? nextFullName : profile.full_name ?? "";
+      const initialsSource = fallbackFullName || profile.email || "Motorista";
+      return {
+        fullName: fallbackFullName || profile.email,
+        email: payload.email ?? profile.email,
+        avatarInitials: buildAvatarInitials(initialsSource),
+        dailyGoal: goals.dailyGoal,
+        monthlyGoal: goals.monthlyGoal,
+      };
+    }
     throw error;
   }
 
-  const goals = mergeMetadataGoals(data.metadata as Record<string, unknown>);
+  const { data, error: fetchError } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("id", profile.id)
+    .maybeSingle();
+  if (fetchError) {
+    if (isPermissionDenied(fetchError)) {
+      logPermissionFallback("user_profiles.select", fetchError);
+      const goals = mergeMetadataGoals(profile.metadata);
+      const fallbackFullName =
+        nextFullName.length > 0 ? nextFullName : profile.full_name ?? "";
+      const initialsSource = fallbackFullName || profile.email || "Motorista";
+      return {
+        fullName: fallbackFullName || profile.email,
+        email: payload.email ?? profile.email,
+        avatarInitials: buildAvatarInitials(initialsSource),
+        dailyGoal: goals.dailyGoal,
+        monthlyGoal: goals.monthlyGoal,
+      };
+    }
+    throw fetchError;
+  }
+
+  const goals = mergeMetadataGoals((data?.metadata ?? {}) as Record<string, unknown>);
   const fullName =
-    data.full_name ?? updates.fullName ?? data.email ?? "Motorista Roda+";
+    data?.full_name ??
+    updates.fullName ??
+    data?.email ??
+    "Motorista Roda+";
 
   return {
     fullName,
-    email: data.email,
+    email: data?.email ?? profile.email,
     avatarInitials: buildAvatarInitials(fullName),
     dailyGoal: goals.dailyGoal,
     monthlyGoal: goals.monthlyGoal,

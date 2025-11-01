@@ -11,6 +11,7 @@ import Perfil from "./pages/Perfil";
 import { BottomNav } from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import MigrateData from "./pages/MigrateData";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -79,6 +80,14 @@ const App = () => {
                       <Perfil />
                       <BottomNav />
                     </>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/migrate"
+                element={
+                  <ProtectedRoute>
+                    <MigrateData />
                   </ProtectedRoute>
                 }
               />
