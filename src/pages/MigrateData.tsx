@@ -92,10 +92,10 @@ const countLabel = (count: number, singular: string, plural: string) => {
   return `${count} ${plural}`;
 };
 
-const chunkInsert = async <T extends Record<string, unknown>>(table: string, rows: T[], chunkSize = 500) => {
+const chunkInsert = async (table: string, rows: any[], chunkSize = 500) => {
   for (let index = 0; index < rows.length; index += chunkSize) {
     const chunk = rows.slice(index, index + chunkSize);
-    const { error } = await supabase.from(table).insert(chunk);
+    const { error } = await (supabase.from(table as any) as any).insert(chunk);
     if (error) {
       throw error;
     }

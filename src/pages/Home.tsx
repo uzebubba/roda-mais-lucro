@@ -472,11 +472,11 @@ const Home = () => {
   };
 
   const handleStartShift = () => {
-    startShiftMutation.mutate();
+    startShiftMutation.mutate(undefined);
   };
 
   const handleStopShift = () => {
-    stopShiftMutation.mutate();
+    stopShiftMutation.mutate(undefined);
   };
 
   const handleSummaryPeriodChange = (value: SummaryPeriod) => {

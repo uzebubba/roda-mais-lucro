@@ -923,14 +923,14 @@ const getOrCreateProfileRow = async () => {
 
 export const getDailyGoal = async (): Promise<number> => {
   const profile = await getOrCreateProfileRow();
-  return mergeMetadataGoals(profile.metadata).dailyGoal;
+  return mergeMetadataGoals(profile.metadata as Record<string, unknown>).dailyGoal;
 };
 
 export const setDailyGoal = async (amount: number): Promise<void> => {
   const profile = await getOrCreateProfileRow();
-  const goals = mergeMetadataGoals(profile.metadata);
+  const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
   const metadata = {
-    ...profile.metadata,
+    ...(profile.metadata as Record<string, unknown>),
     dailyGoal: amount,
     monthlyGoal: goals.monthlyGoal,
   };
@@ -949,14 +949,14 @@ export const setDailyGoal = async (amount: number): Promise<void> => {
 
 export const getMonthlyGoal = async (): Promise<number> => {
   const profile = await getOrCreateProfileRow();
-  return mergeMetadataGoals(profile.metadata).monthlyGoal;
+  return mergeMetadataGoals(profile.metadata as Record<string, unknown>).monthlyGoal;
 };
 
 export const setMonthlyGoal = async (amount: number): Promise<void> => {
   const profile = await getOrCreateProfileRow();
-  const goals = mergeMetadataGoals(profile.metadata);
+  const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
   const metadata = {
-    ...profile.metadata,
+    ...(profile.metadata as Record<string, unknown>),
     monthlyGoal: amount,
     dailyGoal: goals.dailyGoal,
   };
@@ -1094,7 +1094,7 @@ const buildAvatarInitials = (fullName: string) =>
 
 export const getUserProfile = async (): Promise<UserProfile> => {
   const profile = await getOrCreateProfileRow();
-  const goals = mergeMetadataGoals(profile.metadata);
+  const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
   const fullName =
     profile.full_name ?? profile.email ?? "Motorista Roda+";
   return {
@@ -1112,7 +1112,7 @@ export const updateUserProfile = async (
   const profile = await getOrCreateProfileRow();
   const nextFullName = updates.fullName ?? profile.full_name ?? "";
   const metadata = {
-    ...profile.metadata,
+    ...(profile.metadata as Record<string, unknown>),
   };
   if (typeof updates.dailyGoal === "number") {
     metadata.dailyGoal = updates.dailyGoal;
@@ -1124,7 +1124,7 @@ export const updateUserProfile = async (
   const payload: TablesUpdate<"user_profiles"> = {
     full_name: nextFullName,
     email: updates.email ?? profile.email,
-    metadata,
+    metadata: metadata as any,
     updated_at: nowIso(),
   };
 
@@ -1135,7 +1135,7 @@ export const updateUserProfile = async (
   if (error) {
     if (isPermissionDenied(error)) {
       logPermissionFallback("user_profiles.update", error);
-      const goals = mergeMetadataGoals(profile.metadata);
+      const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
       const fallbackFullName =
         nextFullName.length > 0 ? nextFullName : profile.full_name ?? "";
       const initialsSource = fallbackFullName || profile.email || "Motorista";
@@ -1158,7 +1158,7 @@ export const updateUserProfile = async (
   if (fetchError) {
     if (isPermissionDenied(fetchError)) {
       logPermissionFallback("user_profiles.select", fetchError);
-      const goals = mergeMetadataGoals(profile.metadata);
+      const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
       const fallbackFullName =
         nextFullName.length > 0 ? nextFullName : profile.full_name ?? "";
       const initialsSource = fallbackFullName || profile.email || "Motorista";
