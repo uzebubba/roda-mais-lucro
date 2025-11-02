@@ -86,6 +86,20 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     checkSubscription();
   }, [user]);
 
+  // Recheck subscription on page visibility change (e.g., returning from Stripe checkout)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && user) {
+        checkSubscription();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user]);
+
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       ...subscriptionStatus,
