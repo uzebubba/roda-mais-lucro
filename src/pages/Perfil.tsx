@@ -6,6 +6,8 @@ import {
   Save,
   Megaphone,
   Loader2,
+  Sparkles,
+  CarFront,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +24,14 @@ import {
 } from "@/lib/supabase-storage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Perfil = () => {
   const navigate = useNavigate();
@@ -42,6 +52,7 @@ const Perfil = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isProductNewsOpen, setIsProductNewsOpen] = useState(false);
 
   const profile = profileQuery.data;
 
@@ -130,6 +141,10 @@ const Perfil = () => {
     alert("Funcionalidade de exportar dados será implementada em breve!");
   };
 
+  const handleProductNews = () => {
+    setIsProductNewsOpen(true);
+  };
+
   const handleSaveProfile = async () => {
     const trimmedName = fullName.trim();
     if (!trimmedName) {
@@ -208,9 +223,15 @@ const Perfil = () => {
         <Card className="p-6 glass-card animate-fade-in">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                  {avatarInitials}
+              <Avatar className="h-16 w-16 border border-primary/30 shadow-[0_0_25px_-12px_rgba(34,197,94,0.7)]">
+                <AvatarFallback className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary-glow text-xl text-primary-foreground">
+                  <span className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_65%)]" />
+                  <span className="relative font-semibold tracking-wide uppercase">
+                    {avatarInitials}
+                  </span>
+                  <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-background/95 shadow-lg">
+                    <CarFront size={16} className="text-primary" />
+                  </span>
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -321,15 +342,62 @@ const Perfil = () => {
             </span>
             <span className="text-xs text-muted-foreground">CSV / Excel</span>
           </Button>
-          <Button variant="outline" className="w-full justify-between">
+          <Button
+            variant="outline"
+            className="w-full justify-between group"
+            onClick={handleProductNews}
+          >
             <span className="flex items-center gap-3">
               <Megaphone size={18} />
-              Novidades do produto
+              <span className="flex flex-col items-start">
+                <span>Novidades do produto</span>
+                <span className="text-xs text-muted-foreground transition-colors group-hover:text-primary">
+                  Clique aqui e saiba o que vem aí
+                </span>
+              </span>
             </span>
-            <span className="text-xs text-muted-foreground">Em breve</span>
+            <span className="text-xs text-muted-foreground">✨</span>
           </Button>
         </div>
       </main>
+
+      <Dialog open={isProductNewsOpen} onOpenChange={setIsProductNewsOpen}>
+        <DialogContent className="sm:max-w-[420px] border border-border/60 bg-gradient-to-b from-background via-background/95 to-background/90">
+          <DialogHeader className="space-y-3 text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold leading-tight">
+                  Novidades do Roda+ Controle
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Construído com carinho para quem vive o asfalto todos os dias.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Pensamos este copiloto financeiro lado a lado com motoristas de aplicativo —
+              gente que move as cidades e merece ferramentas à altura da profissão.
+            </p>
+            <p>
+              Estamos finalizando a sincronização automática de ganhos para você não perder tempo com lançamentos
+              manuais. Essa melhoria só acontece porque você está aqui testando, dando feedback e apoiando o projeto.
+            </p>
+            <p className="font-medium text-foreground">
+              Obrigado por seguir com o Roda+ Controle. Conte com a gente e continue rodando com mais lucro!
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button onClick={() => setIsProductNewsOpen(false)} className="w-full">
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

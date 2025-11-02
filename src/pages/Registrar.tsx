@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   ArrowLeft,
   Fuel,
   Gauge,
   CircleDollarSign,
   Loader2,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +31,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSpeechRecognition } from "@/hooks/useSpeech";
+import { parseFuelSpeech } from "@/lib/fuel-speech-parser";
 
 const formatNumber = (value: number, minimumFractionDigits = 2) =>
   value
@@ -36,6 +47,33 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "BRL",
   });
+
+const formatDecimalNumber = (value: number, fractionDigits: number) =>
+  value.toLocaleString("pt-BR", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+
+const formatPricePerLiterNumber = (value: number) => {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  const formatted = value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
+  });
+
+  if (!formatted.includes(",")) {
+    return `${formatted},00`;
+  }
+
+  const [integerPart, fractionPart = ""] = formatted.split(",");
+  if (fractionPart.length < 2) {
+    return `${integerPart},${fractionPart.padEnd(2, "0")}`;
+  }
+  return formatted;
+};
 
 const computeFuelStats = (entries: FuelEntry[]) => {
   if (entries.length === 0) {
@@ -84,6 +122,9 @@ const Registrar = () => {
   const [manualLiters, setManualLiters] = useState("");
   const [kmCurrent, setKmCurrent] = useState("");
   const [kmUpdate, setKmUpdate] = useState("");
+  const speech = useSpeechRecognition();
+  const micSupported = speech.supported;
+  const [lastHeard, setLastHeard] = useState("");
 
   const fuelEntriesQuery = useQuery({
     queryKey: ["fuelEntries"],
@@ -149,11 +190,176 @@ const Registrar = () => {
 
   const stats = useMemo(() => computeFuelStats(entries), [entries]);
 
+  useEffect(() => {
+    const transcript = speech.transcript ? speech.transcript.trim() : "";
+
+    if (transcript.length === 0) {
+      return;
+    }
+
+    const updateIfChanged = (
+      setter: Dispatch<SetStateAction<string>>,
+      nextValue: string,
+    ) => {
+      if (!nextValue) {
+        return false;
+      }
+      let changed = false;
+      setter((prev) => {
+        if (prev === nextValue) {
+          return prev;
+        }
+        changed = true;
+        return nextValue;
+      });
+      return changed;
+    };
+
+    if (!/\d/.test(transcript)) {
+      if (!speech.listening) {
+        setLastHeard(transcript);
+      }
+      return;
+    }
+
+    const parsed = parseFuelSpeech(transcript);
+
+    if (!parsed) {
+      if (!speech.listening) {
+        setLastHeard(transcript);
+        toast.warning(
+          "Não consegui entender. Tente dizer algo como: 'Abasteci 120 reais a 5,99 o litro e rodei até 85 mil KM'.",
+        );
+      }
+      return;
+    }
+
+    let updated = false;
+    let hadApplicableData = false;
+
+    if (parsed.totalCost !== undefined && parsed.totalCost > 0) {
+      hadApplicableData = true;
+      const formatted = formatDecimalNumber(parsed.totalCost, 2);
+      updated = updateIfChanged(setTotalCost, formatted) || updated;
+    }
+
+    if (parsed.pricePerLiter !== undefined && parsed.pricePerLiter > 0) {
+      hadApplicableData = true;
+      const formatted = formatPricePerLiterNumber(parsed.pricePerLiter);
+      updated = updateIfChanged(setPricePerLiter, formatted) || updated;
+    }
+
+    if (mode === "manual" && parsed.liters !== undefined && parsed.liters > 0) {
+      hadApplicableData = true;
+      const formatted = formatDecimalNumber(parsed.liters, 3);
+      updated = updateIfChanged(setManualLiters, formatted) || updated;
+    }
+
+    if (parsed.kmCurrent !== undefined && parsed.kmCurrent > 0) {
+      hadApplicableData = true;
+      const kmValue = Math.round(parsed.kmCurrent);
+      if (kmValue > 0) {
+        const kmString = kmValue.toString();
+        const changedCurrent = updateIfChanged(setKmCurrent, kmString);
+        const changedUpdate = updateIfChanged(setKmUpdate, kmString);
+        updated = changedCurrent || changedUpdate || updated;
+      }
+    }
+
+    if (!speech.listening) {
+      setLastHeard(transcript);
+      if (updated || hadApplicableData) {
+        toast.success("Campos preenchidos por voz. Confira antes de salvar.");
+      } else {
+        toast.warning(
+          "Não encontrei dados para preencher. Fale sobre o valor total, preço por litro, litros ou KM.",
+        );
+      }
+    }
+  }, [speech.transcript, speech.listening, mode]);
+
+  useEffect(() => {
+    if (!speech.error) {
+      return;
+    }
+    toast.error("Não foi possível usar o microfone. Verifique as permissões do navegador.");
+  }, [speech.error]);
+
   const parseNumber = (raw: string) => {
     if (!raw) return 0;
-    const normalized = raw.replace(/\s/g, "").replace(",", ".");
+    const normalized = raw
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
     const parsed = parseFloat(normalized);
     return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const formatPricePerLiterValue = (value: string) => {
+    if (!value || value.trim().length === 0) {
+      return "";
+    }
+    const numeric = parseNumber(value);
+    if (!Number.isFinite(numeric)) {
+      return "";
+    }
+    return formatPricePerLiterNumber(numeric);
+  };
+
+  const sanitizeDecimalInput = (value: string, fractionDigits: number) => {
+    if (!value) return "";
+    const cleaned = value.replace(/[^\d.,]/g, "").replace(/\./g, ",");
+    const endsWithSeparator = cleaned.endsWith(",");
+    const [integerPart = "", ...fractionParts] = cleaned.split(",");
+    const fractionPart = fractionParts.join("").slice(0, fractionDigits);
+    const safeInteger =
+      integerPart.length === 0 ? "0" : integerPart.replace(/^0+(?=\d)/, "") || "0";
+    if (fractionDigits === 0) {
+      return safeInteger;
+    }
+    if (fractionPart.length > 0) {
+      return `${safeInteger},${fractionPart}`;
+    }
+    if (endsWithSeparator) {
+      return `${safeInteger},`;
+    }
+    return safeInteger;
+  };
+
+  const formatDecimalValue = (value: string, fractionDigits: number) => {
+    if (!value || value.trim().length === 0) {
+      return "";
+    }
+    const numeric = parseNumber(value);
+    if (!Number.isFinite(numeric)) {
+      return "";
+    }
+    return numeric.toLocaleString("pt-BR", {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    });
+  };
+
+  const handlePricePerLiterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setPricePerLiter(sanitizeDecimalInput(event.target.value, 3));
+  };
+
+  const handlePricePerLiterBlur = () => {
+    setPricePerLiter((current) => formatPricePerLiterValue(current));
+  };
+
+  const handleTotalCostChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setTotalCost(sanitizeDecimalInput(event.target.value, 2));
+  };
+
+  const handleTotalCostBlur = () => {
+    setTotalCost((current) => formatDecimalValue(current, 2));
+  };
+
+  const handleManualLitersChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (mode === "manual") {
+      setManualLiters(sanitizeDecimalInput(event.target.value, 3));
+    }
   };
 
   const derived = useMemo(() => {
@@ -336,11 +542,14 @@ const Registrar = () => {
               <Label htmlFor="pricePerLiter">Preço por litro (R$)</Label>
               <Input
                 id="pricePerLiter"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
                 placeholder="0,00"
+                autoComplete="off"
                 value={pricePerLiter}
-                onChange={(event) => setPricePerLiter(event.target.value)}
+                onChange={handlePricePerLiterChange}
+                onBlur={handlePricePerLiterBlur}
               />
             </div>
 
@@ -348,11 +557,14 @@ const Registrar = () => {
               <Label htmlFor="totalCost">Valor total (R$)</Label>
               <Input
                 id="totalCost"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
                 placeholder="0,00"
+                autoComplete="off"
                 value={totalCost}
-                onChange={(event) => setTotalCost(event.target.value)}
+                onChange={handleTotalCostChange}
+                onBlur={handleTotalCostBlur}
               />
             </div>
 
@@ -365,7 +577,7 @@ const Registrar = () => {
               <Input
                 id="liters"
                 type="text"
-                placeholder="0,00"
+                placeholder="0,000"
                 value={
                   mode === "automatic"
                     ? derived.litersFromAuto > 0
@@ -373,10 +585,10 @@ const Registrar = () => {
                       : ""
                     : manualLiters
                 }
-                onChange={(event) => setManualLiters(event.target.value)}
+                onChange={handleManualLitersChange}
                 readOnly={mode === "automatic"}
                 inputMode="decimal"
-                pattern="[0-9]+([\\.,][0-9]+)?"
+                pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
                 className={mode === "automatic" ? "bg-muted/40" : ""}
               />
             </div>
@@ -446,7 +658,7 @@ const Registrar = () => {
           <Button
             onClick={handleSaveFuel}
             size="lg"
-            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
+            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow flex items-center justify-center gap-3"
             disabled={addFuelEntryMutation.isPending}
           >
             {addFuelEntryMutation.isPending ? (
@@ -455,9 +667,35 @@ const Registrar = () => {
                 Salvando...
               </>
             ) : (
-              "Salvar abastecimento"
+              <>
+                {micSupported && (
+                  <Button
+                    type="button"
+                    variant={speech.listening ? "destructive" : "secondary"}
+                    size="sm"
+                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (speech.listening) {
+                        speech.stop();
+                      } else {
+                        speech.start();
+                      }
+                    }}
+                  >
+                    {speech.listening ? <MicOff size={16} /> : <Mic size={16} />}
+                    {speech.listening ? "Parar" : "Falar"}
+                  </Button>
+                )}
+                <span>Salvar abastecimento</span>
+              </>
             )}
           </Button>
+          {micSupported && lastHeard && (
+            <p className="text-[11px] text-muted-foreground text-right">
+              Último comando: "{lastHeard}"
+            </p>
+          )}
         </Card>
 
         <Card className="p-5 space-y-5 glass-card animate-fade-in">

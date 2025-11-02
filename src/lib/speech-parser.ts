@@ -171,8 +171,18 @@ const extractAmount = (text: string): number | null => {
   return intNum + Math.min(99, decNum) / 100;
 };
 
-const includesAny = (haystack: string, needles: string[]) =>
-  needles.some((n) => haystack.includes(n));
+const normalizeForMatch = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const includesAny = (haystack: string, needles: string[]) => {
+  const normalizedHaystack = normalizeForMatch(haystack);
+  return needles.some((needle) =>
+    normalizedHaystack.includes(normalizeForMatch(needle)),
+  );
+};
 
 export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   if (!ptText || ptText.trim().length === 0) return null;
@@ -223,25 +233,129 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   ];
   const incomeHints = [
     "ganhei",
+    "ganho",
     "recebi",
+    "recebimento",
+    "receita",
+    "receitas",
+    "fiz",
     "faturei",
+    "faturou",
+    "faturamento",
+    "tirei",
+    "lucro",
+    "lucros",
+    "lucrei",
+    "renderam",
+    "render",
     "entrou",
+    "entrada",
+    "caiu na conta",
+    "caiu um pix",
+    "pix",
+    "pix caiu",
+    "transferencia",
+    "transferência",
+    "deposito",
+    "depósito",
+    "depositaram",
+    "pagaram",
+    "pagamento recebido",
     "corrida",
     "corridas",
+    "corridinha",
+    "viagem",
+    "viagens",
+    "frete",
+    "fretes",
+    "entrega",
+    "entregas",
+    "delivery",
     "uber",
+    "uber flash",
+    "uber moto",
+    "uber eats",
+    "ubereats",
+    "uberx",
+    "uber black",
     "99",
+    "99pop",
+    "99 pop",
     "indriver",
     "in driver",
+    "maxim",
+    "cabify",
+    "ifood",
+    "loggi",
+    "particular",
+    "corrida particular",
+    "cliente particular",
+    "corrida cliente",
+  ];
+
+  const expensePriorityHints = [
+    "gastei",
+    "gasto",
+    "gastando",
+    "gastar",
+    "paguei",
+    "pago",
+    "pagar",
+    "pague",
+    "coloquei",
+    "abasteci",
+    "abastecer",
+    "comprei",
+    "comprar",
+    "investi",
+    "investimento",
+  ];
+  const expenseCategoryTriggers = [
+    "gasolina",
+    "combustivel",
+    "combustível",
+    "alcool",
+    "álcool",
+    "etanol",
+    "diesel",
+    "tanque",
+    "pedagio",
+    "pedágio",
+    "manutencao",
+    "manutenção",
+    "troca de óleo",
+    "oleo",
+    "óleo",
+    "pneu",
+    "pneus",
+    "calibragem",
+    "lavagem",
+    "lava rapido",
+    "lava-rápido",
+    "estacionamento",
+    "seguro",
+    "financiamento",
+    "parcelas",
+    "parcela",
+    "almoço",
+    "almoco",
+    "janta",
+    "jantar",
+    "lanche",
+    "comida",
+    "refeição",
   ];
 
   const isExpense = includesAny(text, expenseHints);
   const isIncome = includesAny(text, incomeHints);
+  const hasExpensePriority = includesAny(text, expensePriorityHints);
+  const hasExpenseCategory = includesAny(text, expenseCategoryTriggers);
 
   // Valor
   const amount = extractAmount(text);
 
   // Mapeamentos
-  if (isExpense && (!isIncome || includesAny(text, ["gasolina", "combust", "pedágio", "manutenção", "óleo"])) ) {
+  if (isExpense && (hasExpensePriority || !isIncome || hasExpenseCategory)) {
     let category: string | undefined;
     if (includesAny(text, ["gasolina", "combustivel", "combustível", "alcool", "álcool", "etanol", "diesel"])) category = "Combustível";
     else if (includesAny(text, ["pedagio", "pedágio"])) category = "Pedágio";
@@ -264,6 +378,7 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
     if (text.includes("uber")) platform = "Uber";
     else if (text.includes("indriver") || text.includes("in driver")) platform = "InDriver";
     else if (text.includes("99")) platform = "99";
+    else if (includesAny(text, ["particular", "corrida particular", "cliente particular"])) platform = "Particular";
     else if (text.includes("ifood")) platform = "iFood";
 
     return {

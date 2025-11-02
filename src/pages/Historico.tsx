@@ -4,6 +4,7 @@ import {
   TrendingUp,
   TrendingDown,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,10 +16,11 @@ import {
   getTransactionsByType,
   getTransactionsByCategory,
   getCategoryTotals,
+  deleteTransaction,
   type Transaction,
 } from "@/lib/supabase-storage";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,11 +28,13 @@ const Historico = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user?.id);
+  const queryClient = useQueryClient();
   const [periodFilter, setPeriodFilter] =
     useState<"today" | "week" | "month" | "all">("all");
   const [typeFilter, setTypeFilter] =
     useState<"income" | "expense" | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions"],
@@ -70,6 +74,7 @@ const Historico = () => {
         categories.add(transaction.platform);
       }
     });
+    categories.add("Particular");
     return Array.from(categories).sort();
   }, [transactions]);
 
@@ -81,6 +86,11 @@ const Historico = () => {
     }
     return scoped;
   }, [transactions, periodFilter, typeFilter, categoryFilter]);
+
+  const visibleTransactions = useMemo(
+    () => filteredTransactions.slice(0, 10),
+    [filteredTransactions],
+  );
 
   const { totalIncome, totalExpenses, categoryBreakdown } = useMemo(() => {
     const income = filteredTransactions
@@ -109,6 +119,39 @@ const Historico = () => {
 
   const formatAmount = (amount: number) => {
     return amount.toFixed(2).replace(".", ",");
+  };
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: deleteTransaction,
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<Transaction[]>(["transactions"], (current) =>
+        (current ?? []).filter((transaction) => transaction.id !== id),
+      );
+      toast.success("Lançamento excluído com sucesso.");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o lançamento.";
+      toast.error(message);
+    },
+  });
+
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    const confirmed = window.confirm(
+      `Deseja excluir o lançamento "${transaction.description}"?`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(transaction.id);
+    deleteTransactionMutation.mutate(transaction.id, {
+      onSettled: () => {
+        setDeletingId((current) => (current === transaction.id ? null : current));
+      },
+    });
   };
 
   if (transactionsQuery.isLoading) {
@@ -153,16 +196,16 @@ const Historico = () => {
         />
 
         <p className="text-sm text-muted-foreground text-center">
-          Mostrando {filteredTransactions.length} registro
-          {filteredTransactions.length !== 1 ? "s" : ""}
+          Mostrando {visibleTransactions.length}{" "}
+          {visibleTransactions.length === 1 ? "movimentação" : "movimentações"}
         </p>
 
-        {filteredTransactions.length === 0 ? (
+        {visibleTransactions.length === 0 ? (
           <Card className="p-8 text-center glass-card">
             <p className="text-muted-foreground">Nenhum registro encontrado</p>
           </Card>
         ) : (
-          filteredTransactions.map((transaction: Transaction) => (
+          visibleTransactions.map((transaction: Transaction) => (
             <Card
               key={transaction.id}
               className="p-4 glass-card hover:border-border transition-all duration-300"
@@ -209,16 +252,36 @@ const Historico = () => {
                     </div>
                   </div>
                 </div>
-                <p
-                  className={`text-lg font-bold ${
-                    transaction.type === "income"
-                      ? "text-primary"
-                      : "text-destructive"
-                  }`}
-                >
-                  {transaction.type === "income" ? "+" : "-"}R${" "}
-                  {formatAmount(transaction.amount)}
-                </p>
+                <div className="flex items-center gap-2 self-center">
+                  <p
+                    className={`text-lg font-bold text-right ${
+                      transaction.type === "income"
+                        ? "text-primary"
+                        : "text-destructive"
+                    }`}
+                    style={{ minWidth: "fit-content" }}
+                  >
+                    {transaction.type === "income" ? "+" : "-"}R${" "}
+                    {formatAmount(transaction.amount)}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={
+                      deleteTransactionMutation.isPending && deletingId === transaction.id
+                    }
+                    onClick={() => handleDeleteTransaction(transaction)}
+                    aria-label={`Excluir ${transaction.description}`}
+                  >
+                    {deleteTransactionMutation.isPending && deletingId === transaction.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </Card>
           ))

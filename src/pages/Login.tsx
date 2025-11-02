@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { LogIn, ArrowRight, Mail, Lock, ShieldCheck, TrendingUp, Target, User } from "lucide-react";
+import { LogIn, ArrowRight, Mail, Lock, Phone, ShieldCheck, TrendingUp, Target, User } from "lucide-react";
 import FullPageLoader from "@/components/FullPageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getRememberMePreference, setRememberMePreference } from "@/integrations/supabase/storage";
 
 const bullets = [
   {
@@ -36,10 +36,15 @@ const Login = () => {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [rememberMe, setRememberMe] = useState(false);
 
   const redirectPath = useMemo(() => {
     const state = location.state as { from?: { pathname?: string } } | undefined;
-    return state?.from?.pathname ?? "/";
+    if (state?.from?.pathname) {
+      return state.from.pathname;
+    }
+
+    return "/";
   }, [location.state]);
 
   useEffect(() => {
@@ -47,6 +52,10 @@ const Login = () => {
       navigate(redirectPath, { replace: true });
     }
   }, [user, navigate, redirectPath]);
+
+  useEffect(() => {
+    setRememberMe(getRememberMePreference());
+  }, []);
 
   if (authLoading) {
     return <FullPageLoader />;
@@ -59,17 +68,26 @@ const Login = () => {
     const email = (formData.get("email") as string | null)?.trim();
     const password = formData.get("password") as string | null;
     const fullName = (formData.get("fullName") as string | null)?.trim();
+    const whatsapp = (formData.get("whatsapp") as string | null)?.trim();
 
     if (!email || !password) {
       toast.error("Informe e-mail e senha para continuar.");
       return;
     }
 
-    if (mode === "register" && !fullName) {
-      toast.error("Informe seu nome completo para criar a conta.");
-      return;
+    if (mode === "register") {
+      if (!fullName) {
+        toast.error("Informe seu nome completo para criar a conta.");
+        return;
+      }
+
+      if (!whatsapp) {
+        toast.error("Informe seu WhatsApp para criar a conta.");
+        return;
+      }
     }
 
+    setRememberMePreference(rememberMe);
     setLoading(true);
     const run = async () => {
       try {
@@ -90,11 +108,19 @@ const Login = () => {
           return;
         }
 
+        const metadata: Record<string, string> = {};
+        if (fullName) {
+          metadata.full_name = fullName;
+        }
+        if (whatsapp) {
+          metadata.whatsapp = whatsapp;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: fullName ? { full_name: fullName } : undefined,
+            data: Object.keys(metadata).length > 0 ? metadata : undefined,
             emailRedirectTo: `${window.location.origin}/`,
           },
         });
@@ -183,21 +209,6 @@ const Login = () => {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full gap-2 text-sm font-medium"
-                  onClick={() => toast.info("Integração com Google em breve.")}
-                  disabled={loading}
-                >
-                  <span className="text-lg" role="img" aria-hidden>🌐</span>
-                  Continuar com Google
-                </Button>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <Separator className="flex-1" />
-                  <span>ou use seu e-mail</span>
-                  <Separator className="flex-1" />
-                </div>
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   {mode === "register" && (
                     <div className="space-y-2">
@@ -215,6 +226,27 @@ const Login = () => {
                           disabled={loading}
                         />
                       </div>
+                    </div>
+                  )}
+                  {mode === "register" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp" className="text-sm font-medium">WhatsApp</Label>
+                      <div className="relative">
+                        <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="whatsapp"
+                          name="whatsapp"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          autoComplete="tel"
+                          required={mode === "register"}
+                          className="pl-9"
+                          disabled={loading}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Usaremos este número apenas para suporte e comunicações importantes.
+                      </p>
                     </div>
                   )}
                   <div className="space-y-2">
@@ -259,7 +291,13 @@ const Login = () => {
                   {mode === "login" && (
                     <div className="flex items-center justify-between text-sm">
                       <label className="flex items-center gap-2 text-muted-foreground">
-                        <Checkbox id="remember" name="remember" disabled />
+                        <Checkbox
+                          id="remember"
+                          name="remember"
+                          checked={rememberMe}
+                          onCheckedChange={(checked) => setRememberMe(checked === true)}
+                          disabled={loading}
+                        />
                         <span>Lembrar de mim</span>
                       </label>
                       <span className="text-xs text-muted-foreground">Suporte 24/7 via WhatsApp</span>

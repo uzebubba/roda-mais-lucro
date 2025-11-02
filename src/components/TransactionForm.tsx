@@ -26,13 +26,21 @@ interface TransactionFormProps {
   onSuccess?: (transaction: Transaction) => void;
 }
 
+const getTodayInputValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const TransactionForm = ({
   initialType = "income",
   submitLabel = "Salvar",
   onSuccess,
 }: TransactionFormProps) => {
   const [type, setType] = useState<TransactionType>(initialType);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(getTodayInputValue());
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState("");
@@ -68,7 +76,7 @@ const TransactionForm = ({
 
   const resetForm = (nextType: TransactionType = initialType) => {
     setType(nextType);
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(getTodayInputValue());
     setAmount("");
     setDescription("");
     setPlatform("");
@@ -109,6 +117,20 @@ const TransactionForm = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.transcript]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setDate(getTodayInputValue());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -117,10 +139,15 @@ const TransactionForm = ({
       return;
     }
 
+    const todayDateValue = getTodayInputValue();
+    if (date !== todayDateValue) {
+      setDate(todayDateValue);
+    }
+
     const transactionData = {
       type,
       amount: parseFloat(amount),
-      date: new Date(date).toISOString(),
+      date: new Date(todayDateValue).toISOString(),
       description:
         description || (type === "income" ? "Corridas do dia" : "Despesa"),
       ...(type === "income" && platform && { platform }),
@@ -198,8 +225,9 @@ const TransactionForm = ({
               id="date"
               type="date"
               value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="mt-1"
+              disabled
+              title="A data é preenchida automaticamente com o dia atual"
+              className="mt-1 cursor-not-allowed opacity-80"
             />
           </div>
 
@@ -229,6 +257,7 @@ const TransactionForm = ({
                   <SelectItem value="Uber">Uber</SelectItem>
                   <SelectItem value="99">99</SelectItem>
                   <SelectItem value="InDriver">InDriver</SelectItem>
+                  <SelectItem value="Particular">Particular</SelectItem>
                   <SelectItem value="Outro">Outro</SelectItem>
                 </SelectContent>
               </Select>

@@ -196,6 +196,14 @@ const initializeMockData = () => {
         description: "Pedágio",
         category: "Pedágio",
       },
+      {
+        id: "7",
+        type: "income",
+        amount: 180.0,
+        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        description: "Corrida particular",
+        platform: "Particular",
+      },
     ];
     localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(mockTransactions));
   }

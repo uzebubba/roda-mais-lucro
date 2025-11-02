@@ -252,6 +252,18 @@ export const addTransaction = async (
   return mapTransaction(data);
 };
 
+export const deleteTransaction = async (id: string): Promise<void> => {
+  const user = await requireUser();
+  const { error } = await supabase
+    .from("transactions")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("id", id);
+  if (error) {
+    throw error;
+  }
+};
+
 export const getFixedExpenses = async (): Promise<FixedExpense[]> => {
   const user = await requireUser();
   const { data, error } = await supabase
@@ -319,6 +331,18 @@ export const toggleFixedExpensePaid = async (
     throw error;
   }
   return mapFixedExpense(data);
+};
+
+export const deleteFixedExpense = async (id: string): Promise<void> => {
+  const user = await requireUser();
+  const { error } = await supabase
+    .from("fixed_expenses")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("id", id);
+  if (error) {
+    throw error;
+  }
 };
 
 export const getFuelEntries = async (): Promise<FuelEntry[]> => {

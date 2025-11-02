@@ -31,8 +31,8 @@ export const useSpeechRecognition = (): SpeechState => {
     recognitionRef.current = new SpeechRecognitionCtor();
     const rec = recognitionRef.current;
     rec.lang = "pt-BR";
-    rec.continuous = false;
-    rec.interimResults = false;
+    rec.continuous = true;
+    rec.interimResults = true;
 
     rec.onstart = () => {
       setListening(true);
@@ -47,8 +47,16 @@ export const useSpeechRecognition = (): SpeechState => {
       setListening(false);
     };
     rec.onresult = (event: any) => {
-      const result = event?.results?.[0]?.[0]?.transcript || "";
-      setTranscript(String(result));
+      if (!event?.results) {
+        return;
+      }
+
+      const transcriptText = Array.from(event.results)
+        .map((result: any) => result?.[0]?.transcript || "")
+        .join(" ")
+        .trim();
+
+      setTranscript(transcriptText);
     };
 
     return () => {

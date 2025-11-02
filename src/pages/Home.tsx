@@ -179,6 +179,7 @@ const Home = () => {
   const [weeklyWorkHistory, setWeeklyWorkHistoryState] = useState<WeeklyWorkSummary[]>([]);
   const [weeklyData, setWeeklyData] = useState<Array<{ day: string; lucro: number }>>([]);
   const [showMigrationBanner, setShowMigrationBanner] = useState(false);
+  const [dayKey, setDayKey] = useState(() => new Date().toISOString().slice(0, 10));
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions"],
@@ -275,6 +276,34 @@ const Home = () => {
   }, [transactionsQuery.data, workSessionsQuery.data, refreshDerivedData]);
 
   useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      transactionsQuery.data === undefined ||
+      workSessionsQuery.data === undefined
+    ) {
+      return;
+    }
+
+    let currentDayKey = new Date().toISOString().slice(0, 10);
+
+    const interval = window.setInterval(() => {
+      const nowKey = new Date().toISOString().slice(0, 10);
+      if (nowKey !== currentDayKey) {
+        currentDayKey = nowKey;
+        setDayKey(nowKey);
+        void refreshDerivedData(
+          transactionsQuery.data ?? [],
+          workSessionsQuery.data ?? [],
+        );
+      }
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [transactionsQuery.data, workSessionsQuery.data, refreshDerivedData]);
+
+  useEffect(() => {
     if (!todayStats.isWorking) {
       return;
     }
@@ -301,7 +330,7 @@ const Home = () => {
       expenses,
       profit: income - expenses,
     };
-  }, [transactions, summaryPeriod]);
+  }, [transactions, summaryPeriod, dayKey]);
 
   const monthTotals = useMemo(() => {
     const scoped = filterTransactionsByPeriod(transactions, "month");
@@ -316,7 +345,7 @@ const Home = () => {
       expenses,
       profit: income - expenses,
     };
-  }, [transactions]);
+  }, [transactions, dayKey]);
 
   const dailyGoal = userProfile?.dailyGoal ?? 300;
   const monthlyGoal = userProfile?.monthlyGoal ?? 6000;
@@ -403,9 +432,24 @@ const Home = () => {
     mutationFn: persistMonthlyGoal,
   });
 
-  const handleTransactionSaved = () => {
-    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  const handleTransactionSaved = (transaction: Transaction) => {
+    const updatedTransactions =
+      queryClient.setQueryData<Transaction[]>(["transactions"], (previous) => {
+        const existing = Array.isArray(previous) ? previous : [];
+        const withoutDuplicate = existing.filter((item) => item.id !== transaction.id);
+        const next = [transaction, ...withoutDuplicate];
+        return next.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+      }) ?? [];
+
+    const cachedSessions =
+      queryClient.getQueryData<WorkSession[]>(["workSessions"]) ?? [];
+
+    void refreshDerivedData(updatedTransactions, cachedSessions);
+
     setActiveType(null);
+    void queryClient.invalidateQueries({ queryKey: ["transactions"] });
   };
 
   const handleGoalsUpdated = (daily: number, monthly: number) => {

@@ -5,6 +5,7 @@ import {
   Plus,
   Droplet,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import {
   getOilReminderSettings,
   updateOilReminderSettings,
   registerOilChange,
+  deleteFixedExpense,
   type FixedExpense,
   type VehicleState,
   type OilReminderSettings,
@@ -87,6 +89,10 @@ const Fixas = () => {
 
   const registerOilChangeMutation = useMutation({
     mutationFn: registerOilChange,
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: deleteFixedExpense,
   });
 
   useEffect(() => {
@@ -157,6 +163,29 @@ const Fixas = () => {
       },
       onSuccess: () => {
         toast.success("Status atualizado!");
+      },
+    });
+  };
+
+  const handleDeleteExpense = (id: string, name: string) => {
+    const shouldDelete = window.confirm(
+      `Tem certeza que deseja excluir "${name}"?`,
+    );
+    if (!shouldDelete) {
+      return;
+    }
+
+    deleteExpenseMutation.mutate(id, {
+      onError: (error) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível remover a despesa fixa.";
+        toast.error(message);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["fixedExpenses"] });
+        toast.success("Despesa fixa removida.");
       },
     });
   };
@@ -388,46 +417,6 @@ const Fixas = () => {
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
-        {/* Fixed expenses */}
-        <Card className="p-5 space-y-4 glass-card animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
-              Despesas Fixas
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              {expenses.length} registro{expenses.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="space-y-3">
-            {expenses.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma despesa fixa cadastrada.
-              </p>
-            ) : (
-              expenses.map((expense: FixedExpense) => (
-                <div
-                  key={expense.id}
-                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{expense.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>R$ {formatAmount(expense.amount)}</span>
-                      <span>•</span>
-                      <span>Vence dia {expense.dueDay}</span>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={expense.paid}
-                    onCheckedChange={() => handleToggle(expense.id)}
-                    disabled={toggleExpenseMutation.isPending}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-
         {/* Oil reminder */}
         <Card className="p-5 space-y-5 glass-card animate-fade-in">
           <div className="flex items-start justify-between gap-3">
@@ -532,6 +521,62 @@ const Fixas = () => {
                 </>
               )}
             </Button>
+          </div>
+        </Card>
+
+        {/* Fixed expenses */}
+        <Card className="p-5 space-y-4 glass-card animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">
+              Despesas Fixas
+            </h2>
+            <span className="text-sm text-muted-foreground">
+              {expenses.length} registro{expenses.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {expenses.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma despesa fixa cadastrada.
+              </p>
+            ) : (
+              expenses.map((expense: FixedExpense) => (
+                <div
+                  key={expense.id}
+                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-4 py-3 gap-3"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{expense.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>R$ {formatAmount(expense.amount)}</span>
+                      <span>•</span>
+                      <span>Vence dia {expense.dueDay}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={expense.paid}
+                      onCheckedChange={() => handleToggle(expense.id)}
+                      disabled={toggleExpenseMutation.isPending}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive/80"
+                      onClick={() => handleDeleteExpense(expense.id, expense.name)}
+                      disabled={deleteExpenseMutation.isPending}
+                    >
+                      {deleteExpenseMutation.isPending &&
+                      deleteExpenseMutation.variables === expense.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </main>
