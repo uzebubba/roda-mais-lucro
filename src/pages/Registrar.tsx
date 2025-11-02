@@ -34,6 +34,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSpeechRecognition } from "@/hooks/useSpeech";
 import { parseFuelSpeech } from "@/lib/fuel-speech-parser";
 
+const EMPTY_FUEL_ENTRIES: FuelEntry[] = [];
+
 const formatNumber = (value: number, minimumFractionDigits = 2) =>
   value
     .toLocaleString("pt-BR", {
@@ -179,7 +181,7 @@ const Registrar = () => {
     }
   }, [vehicleQuery.error]);
 
-  const entries = fuelEntriesQuery.data ?? [];
+  const entries = fuelEntriesQuery.data ?? EMPTY_FUEL_ENTRIES;
   const lastEntry = entries[0];
 
   useEffect(() => {

@@ -7,8 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+type LogDetails = Record<string, unknown>;
+
+const logStep = (step: string, details?: LogDetails) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
@@ -59,21 +61,28 @@ serve(async (req) => {
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      status: "all",
+      limit: 5,
     });
-    const hasActiveSub = subscriptions.data.length > 0;
+    const activeSubscription = subscriptions.data.find(subscription =>
+      subscription.status === "active" || subscription.status === "trialing"
+    );
+    const hasActiveSub = Boolean(activeSubscription);
     let productId = null;
     let subscriptionEnd = null;
     let priceId = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+      const subscription = activeSubscription!;
 
       // Validate current_period_end before creating Date
       if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
         subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-        logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+        logStep("Active subscription found", {
+          subscriptionId: subscription.id,
+          endDate: subscriptionEnd,
+          status: subscription.status,
+        });
       } else {
         logStep("Subscription found but no valid end date", { subscriptionId: subscription.id });
       }

@@ -159,7 +159,7 @@ const Assinatura = () => {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-foreground">Escolha seu plano</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Acesse o Roda+ Controle e tenha controle total das suas corridas. Gerencie lucro, custos e metas em tempo real.
+            Acesse a Bubba e tenha controle total das suas corridas. Gerencie lucro, custos e metas em tempo real.
           </p>
         </div>
 
@@ -264,6 +264,9 @@ const Assinatura = () => {
                 <span className="text-4xl font-bold text-foreground">R$ 199,90</span>
                 <span className="text-muted-foreground">/ano</span>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Equivalente a apenas <span className="font-semibold text-primary">R$ 16,50/mês</span> no plano anual.
+              </p>
               <p className="text-sm text-primary font-semibold">Economize R$ 158,90 por ano!</p>
             </CardHeader>
             <CardContent className="space-y-6">

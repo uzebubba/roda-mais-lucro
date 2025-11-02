@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -133,7 +134,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       initialized: initializedForUser,
       checkSubscription,
     };
-  }, [checkSubscription, subscriptionStatus, user?.id]);
+  }, [checkSubscription, subscriptionStatus, user]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 };

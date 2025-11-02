@@ -7,8 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+type LogDetails = Record<string, unknown>;
+
+const logStep = (step: string, details?: LogDetails) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CUSTOMER-PORTAL] ${step}${detailsStr}`);
 };
 

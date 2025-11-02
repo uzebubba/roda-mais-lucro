@@ -1096,7 +1096,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
   const profile = await getOrCreateProfileRow();
   const goals = mergeMetadataGoals(profile.metadata as Record<string, unknown>);
   const fullName =
-    profile.full_name ?? profile.email ?? "Motorista Roda+";
+    profile.full_name ?? profile.email ?? "Motorista Bubba";
   return {
     fullName,
     email: profile.email,
@@ -1124,7 +1124,7 @@ export const updateUserProfile = async (
   const payload: TablesUpdate<"user_profiles"> = {
     full_name: nextFullName,
     email: updates.email ?? profile.email,
-    metadata: metadata as any,
+    metadata: metadata as TablesUpdate<"user_profiles">["metadata"],
     updated_at: nowIso(),
   };
 
@@ -1178,7 +1178,7 @@ export const updateUserProfile = async (
     data?.full_name ??
     updates.fullName ??
     data?.email ??
-    "Motorista Roda+";
+    "Motorista Bubba";
 
   return {
     fullName,

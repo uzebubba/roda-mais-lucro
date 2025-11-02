@@ -167,7 +167,7 @@ const Login = () => {
           }} />
           <div className="relative z-10 flex flex-col justify-between px-12 py-14">
             <div className="space-y-6">
-              <p className="text-sm uppercase tracking-[0.35em] text-primary/80 font-semibold">Roda+ Controle</p>
+              <p className="text-sm uppercase tracking-[0.35em] text-primary/80 font-semibold">Bubba</p>
               <h1 className="text-4xl font-bold leading-tight text-foreground">
                 Controle total das suas corridas em um só lugar.
               </h1>
@@ -187,7 +187,7 @@ const Login = () => {
               ))}
             </div>
             <div className="text-xs text-muted-foreground/80">
-              © {new Date().getFullYear()} Roda+ Controle. O copiloto financeiro dos motoristas de aplicativo brasileiros.
+              © {new Date().getFullYear()} Bubba. O copiloto financeiro dos motoristas de aplicativo brasileiros.
             </div>
           </div>
         </aside>
@@ -300,7 +300,7 @@ const Login = () => {
                         />
                         <span>Lembrar de mim</span>
                       </label>
-                      <span className="text-xs text-muted-foreground">Suporte 24/7 via WhatsApp</span>
+                      <span className="text-xs text-muted-foreground">Suporte via WhatsApp</span>
                     </div>
                   )}
                   <Button type="submit" disabled={loading} className="w-full gap-2 text-base font-semibold">

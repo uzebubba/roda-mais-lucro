@@ -24,6 +24,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
+const EMPTY_TRANSACTIONS: Transaction[] = [];
+
 const Historico = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -54,7 +56,7 @@ const Historico = () => {
     }
   }, [transactionsQuery.error]);
 
-  const transactions = transactionsQuery.data ?? [];
+  const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
 
   const allCategories = useMemo(() => {
     const categories = new Set<string>();

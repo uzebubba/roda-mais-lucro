@@ -20,7 +20,7 @@ interface EditGoalDialogProps {
 }
 
 const formatCurrencyValue = (value: string) => {
-  const numeric = value.replace(/[^\d,\.]/g, "").replace(",", ".");
+  const numeric = value.replace(/[^\d,.]/g, "").replace(",", ".");
   return numeric;
 };
 

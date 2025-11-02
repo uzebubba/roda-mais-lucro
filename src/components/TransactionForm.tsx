@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus, Minus, Mic, MicOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -74,19 +74,21 @@ const TransactionForm = ({
   const [lastHeard, setLastHeard] = useState("");
   const micSupported = speech.supported;
 
-  const resetForm = (nextType: TransactionType = initialType) => {
-    setType(nextType);
-    setDate(getTodayInputValue());
-    setAmount("");
-    setDescription("");
-    setPlatform("");
-    setCategory("");
-  };
+  const resetForm = useCallback(
+    (nextType: TransactionType = initialType) => {
+      setType(nextType);
+      setDate(getTodayInputValue());
+      setAmount("");
+      setDescription("");
+      setPlatform("");
+      setCategory("");
+    },
+    [initialType],
+  );
 
   useEffect(() => {
     resetForm(initialType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialType]);
+  }, [initialType, resetForm]);
 
   // When transcription arrives, parse and fill form
   useEffect(() => {
@@ -114,7 +116,6 @@ const TransactionForm = ({
     }
 
     toast.success("Campos preenchidos por voz. Confira e salve.");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.transcript]);
 
   useEffect(() => {

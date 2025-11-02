@@ -1,5 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+type SpeechRecognitionConstructor = new () => WebSpeechRecognition;
+
+type SpeechRecognitionResultEntry = {
+  0?: {
+    transcript?: string;
+  };
+};
+
+interface SpeechRecognitionErrorLike {
+  error?: string;
+}
+
+interface SpeechRecognitionEventLike {
+  results?: ArrayLike<SpeechRecognitionResultEntry>;
+}
+
+interface WebSpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  abort?: () => void;
+  onstart: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorLike) => void) | null;
+  onend: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+}
+
+type WindowWithSpeechRecognition = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
 export interface SpeechState {
   supported: boolean;
   listening: boolean;
@@ -11,25 +45,24 @@ export interface SpeechState {
 
 // Web Speech API hook (pt-BR), seguro para SSR
 export const useSpeechRecognition = (): SpeechState => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SpeechRecognitionCtor: any = useMemo(() => {
+  const SpeechRecognitionCtor = useMemo<SpeechRecognitionConstructor | null>(() => {
     if (typeof window === "undefined") return null;
-    // Support webkit prefix
-    return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+    const speechWindow = window as WindowWithSpeechRecognition;
+    return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
   }, []);
 
   const supported = Boolean(SpeechRecognitionCtor);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any | null>(null);
+  const recognitionRef = useRef<WebSpeechRecognition | null>(null);
 
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supported) return;
-    recognitionRef.current = new SpeechRecognitionCtor();
-    const rec = recognitionRef.current;
+    if (!supported || !SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognitionRef.current = recognition;
+    const rec = recognition;
     rec.lang = "pt-BR";
     rec.continuous = true;
     rec.interimResults = true;
@@ -39,20 +72,20 @@ export const useSpeechRecognition = (): SpeechState => {
       setError(null);
       setTranscript("");
     };
-    rec.onerror = (e: any) => {
-      setError(e?.error || "speech_error");
+    rec.onerror = (event: SpeechRecognitionErrorLike) => {
+      setError(event?.error || "speech_error");
       setListening(false);
     };
     rec.onend = () => {
       setListening(false);
     };
-    rec.onresult = (event: any) => {
+    rec.onresult = (event: SpeechRecognitionEventLike) => {
       if (!event?.results) {
         return;
       }
 
       const transcriptText = Array.from(event.results)
-        .map((result: any) => result?.[0]?.transcript || "")
+        .map((result) => result?.[0]?.transcript || "")
         .join(" ")
         .trim();
 
@@ -66,7 +99,9 @@ export const useSpeechRecognition = (): SpeechState => {
         rec.onend = null;
         rec.onresult = null;
         rec.abort?.();
-      } catch (_e) {}
+      } catch (_error) {
+        /* noop */
+      }
       recognitionRef.current = null;
     };
   }, [SpeechRecognitionCtor, supported]);
@@ -75,8 +110,8 @@ export const useSpeechRecognition = (): SpeechState => {
     if (!supported || !recognitionRef.current) return;
     try {
       recognitionRef.current.start();
-    } catch (_e) {
-      // ignore already started
+    } catch (_error) {
+      /* noop - already started */
     }
   };
 
@@ -84,7 +119,9 @@ export const useSpeechRecognition = (): SpeechState => {
     if (!supported || !recognitionRef.current) return;
     try {
       recognitionRef.current.stop();
-    } catch (_e) {}
+    } catch (_error) {
+      /* noop */
+    }
   };
 
   return { supported, listening, transcript, error, start, stop };

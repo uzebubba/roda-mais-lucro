@@ -111,7 +111,7 @@ export const parseFuelSpeech = (input: string): ParsedFuelSpeech | null => {
   const contextWindow = buildContextExtractor(text);
 
   const numberPattern =
-    /(\d{1,3}(?:[\.\s]\d{3})*(?:,\d{1,3})|\d+(?:[.,]\d{1,3})?)/g;
+    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,3})|\d+(?:[.,]\d{1,3})?)/g;
 
   const numbers = Array.from(text.matchAll(numberPattern))
     .map((match) => {
@@ -281,7 +281,7 @@ export const parseFuelSpeech = (input: string): ParsedFuelSpeech | null => {
 
   if (result.kmCurrent === undefined) {
     const kmAfterKeyword = normalized.match(
-      /(km|quilometro|quilometros|quilômetro|quilômetros)\s*(\d{1,3}(?:[\.\s]\d{3})*(?:,\d{1,2})|\d+(?:[.,]\d{1,2})?)/,
+      /(km|quilometro|quilometros|quilômetro|quilômetros)\s*(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})|\d+(?:[.,]\d{1,2})?)/,
     );
     if (kmAfterKeyword && kmAfterKeyword[2]) {
       const value = parseDecimal(kmAfterKeyword[2]);

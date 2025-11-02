@@ -138,7 +138,7 @@ const parseCardinalWords = (tokens: string[]): number | null => {
 
 const extractAmount = (text: string): number | null => {
   // Captura padrões: 1.200,50 | 50,90 | 50.90 | 50 | R$ 50 | 50 reais
-  const re = /(?:r\$\s*)?(\d{1,3}(?:[\.\s]\d{3})*(?:,\d{1,2})|\d+(?:[\.,]\d{1,2})?|\d+)/i;
+  const re = /(?:r\$\s*)?(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})|\d+(?:[.,]\d{1,2})?|\d+)/i;
   const m = text.match(re);
   if (m) {
     return normalizeNumber(m[1]);

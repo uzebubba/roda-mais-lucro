@@ -131,10 +131,8 @@ const Perfil = () => {
   }, [profile?.avatarInitials, fullName]);
 
   const handleWhatsApp = () => {
-    window.open(
-      "https://wa.me/5511999999999?text=Olá, preciso de ajuda com o Roda+ Controle",
-      "_blank",
-    );
+    const supportUrl = "https://wa.me/message/QURUXGZK3FPPE1";
+    window.open(supportUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleExport = () => {
@@ -236,7 +234,7 @@ const Perfil = () => {
               </Avatar>
               <div>
                 <h2 className="text-xl font-bold text-foreground">
-                  {fullName || "Motorista Roda+"}
+                  {fullName || "Motorista Bubba"}
                 </h2>
                 <p className="text-sm text-muted-foreground">{displayedEmail}</p>
               </div>
@@ -370,25 +368,37 @@ const Perfil = () => {
               </div>
               <div>
                 <DialogTitle className="text-xl font-semibold leading-tight">
-                  Novidades do Roda+ Controle
+                  Novidades da Bubba
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
-                  Construído com carinho para quem vive o asfalto todos os dias.
+                  Construído com quem vive o asfalto todos os dias.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-            <p>
-              Pensamos este copiloto financeiro lado a lado com motoristas de aplicativo —
-              gente que move as cidades e merece ferramentas à altura da profissão.
+            <p className="flex items-center gap-2 text-foreground font-medium">
+              <span role="img" aria-hidden>🚀</span>
+              Novidades da Bubba
             </p>
             <p>
-              Estamos finalizando a sincronização automática de ganhos para você não perder tempo com lançamentos
-              manuais. Essa melhoria só acontece porque você está aqui testando, dando feedback e apoiando o projeto.
+              A Bubba nasceu para ser o copiloto financeiro de quem move as cidades. A gente entende cada corrida,
+              cada hora no trânsito e valoriza seu tempo e lucro.
+            </p>
+            <p>
+              Por isso estamos construindo a ferramenta mais prática e inteligente de controle financeiro, feita para a
+              rotina real dos motoristas — não para planilhas frias.
+            </p>
+            <p>
+              Estamos finalizando a sincronização automática de ganhos para você abandonar anotações manuais e focar em
+              rodar com mais lucro e tranquilidade.
+            </p>
+            <p className="font-medium text-primary">
+              💚 O seu apoio é o combustível que move a Bubba: ao testar, dar feedback e compartilhar a Bubba,
+              você ajuda a construir um app de motorista pra motorista.
             </p>
             <p className="font-medium text-foreground">
-              Obrigado por seguir com o Roda+ Controle. Conte com a gente e continue rodando com mais lucro!
+              Obrigado por rodar com a Bubba. Conte com a gente!
             </p>
           </div>
           <DialogFooter className="sm:justify-start">

@@ -11,6 +11,7 @@ import {
   type LegacyDataSummary,
 } from "@/lib/local-migration";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import {
   setDailyGoal,
   setMonthlyGoal,
@@ -92,17 +93,28 @@ const countLabel = (count: number, singular: string, plural: string) => {
   return `${count} ${plural}`;
 };
 
-const chunkInsert = async (table: string, rows: any[], chunkSize = 500) => {
+type TableInsertMap = {
+  transactions: TablesInsert<"transactions">;
+  fixed_expenses: TablesInsert<"fixed_expenses">;
+  fuel_entries: TablesInsert<"fuel_entries">;
+  work_sessions: TablesInsert<"work_sessions">;
+};
+
+const chunkInsert = async <T extends keyof TableInsertMap>(
+  table: T,
+  rows: TableInsertMap[T][],
+  chunkSize = 500,
+) => {
   for (let index = 0; index < rows.length; index += chunkSize) {
     const chunk = rows.slice(index, index + chunkSize);
-    const { error } = await (supabase.from(table as any) as any).insert(chunk);
+    const { error } = await supabase.from(table).insert(chunk);
     if (error) {
       throw error;
     }
   }
 };
 
-const sanitizeTransactions = (transactions: Transaction[], userId: string) =>
+const sanitizeTransactions = (transactions: Transaction[], userId: string): TableInsertMap["transactions"][] =>
   transactions.map((transaction) => {
     const { id: _ignoreId, ...rest } = transaction;
     return {
@@ -116,7 +128,10 @@ const sanitizeTransactions = (transactions: Transaction[], userId: string) =>
     };
   });
 
-const sanitizeFixedExpenses = (expenses: FixedExpense[], userId: string) =>
+const sanitizeFixedExpenses = (
+  expenses: FixedExpense[],
+  userId: string,
+): TableInsertMap["fixed_expenses"][] =>
   expenses.map((expense) => {
     const { id: _ignoreId, dueDay, ...rest } = expense;
     return {
@@ -128,7 +143,10 @@ const sanitizeFixedExpenses = (expenses: FixedExpense[], userId: string) =>
     };
   });
 
-const sanitizeFuelEntries = (entries: FuelEntry[], userId: string) =>
+const sanitizeFuelEntries = (
+  entries: FuelEntry[],
+  userId: string,
+): TableInsertMap["fuel_entries"][] =>
   entries.map((entry) => {
     const { id: _ignoreId, ...rest } = entry;
     return {
@@ -145,7 +163,10 @@ const sanitizeFuelEntries = (entries: FuelEntry[], userId: string) =>
     };
   });
 
-const sanitizeWorkSessions = (sessions: WorkSession[], userId: string) =>
+const sanitizeWorkSessions = (
+  sessions: WorkSession[],
+  userId: string,
+): TableInsertMap["work_sessions"][] =>
   sessions.map((session) => {
     const { id: _ignoreId, ...rest } = session;
     return {

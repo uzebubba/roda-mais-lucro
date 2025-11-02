@@ -54,6 +54,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { hasLegacyData } from "@/lib/local-migration";
 
+const EMPTY_TRANSACTIONS: Transaction[] = [];
+
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type SummaryPeriod = "today" | "week" | "month";
@@ -243,7 +245,7 @@ const Home = () => {
     setShowMigrationBanner(hasLegacyData());
   }, [isAuthenticated]);
 
-  const transactions = transactionsQuery.data ?? [];
+  const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
   const workSessions = workSessionsQuery.data ?? [];
   const userProfile = profileQuery.data;
 
@@ -330,7 +332,7 @@ const Home = () => {
       expenses,
       profit: income - expenses,
     };
-  }, [transactions, summaryPeriod, dayKey]);
+  }, [transactions, summaryPeriod]);
 
   const monthTotals = useMemo(() => {
     const scoped = filterTransactionsByPeriod(transactions, "month");
@@ -345,7 +347,7 @@ const Home = () => {
       expenses,
       profit: income - expenses,
     };
-  }, [transactions, dayKey]);
+  }, [transactions]);
 
   const dailyGoal = userProfile?.dailyGoal ?? 300;
   const monthlyGoal = userProfile?.monthlyGoal ?? 6000;
