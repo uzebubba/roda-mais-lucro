@@ -93,9 +93,12 @@ const TransactionForm = ({
   // When transcription arrives, parse and fill form
   const lastProcessedTranscriptRef = useRef("");
 
+  const VOICE_TOAST_ID = "transaction-voice-feedback";
+
   useEffect(() => {
     if (speech.listening) {
       lastProcessedTranscriptRef.current = "";
+      toast.dismiss(VOICE_TOAST_ID);
     }
   }, [speech.listening]);
 
@@ -113,7 +116,9 @@ const TransactionForm = ({
     if (!parsed) {
       if (!speech.listening) {
         setLastHeard(currentTranscript);
-        toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.");
+        toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.", {
+          id: VOICE_TOAST_ID,
+        });
         lastProcessedTranscriptRef.current = currentTranscript;
       }
       return;
@@ -141,7 +146,9 @@ const TransactionForm = ({
       speech.stop();
     }
 
-    toast.success("Campos preenchidos por voz. Confira e salve.");
+    toast.success("Campos preenchidos por voz. Confira e salve.", {
+      id: VOICE_TOAST_ID,
+    });
   }, [speech.listening, speech.transcript]);
 
   useEffect(() => {

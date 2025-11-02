@@ -192,11 +192,13 @@ const Registrar = () => {
   }, [entries]);
 
   const stats = useMemo(() => computeFuelStats(entries), [entries]);
+  const VOICE_TOAST_ID = "fuel-voice-feedback";
   const lastProcessedFuelTranscriptRef = useRef("");
 
   useEffect(() => {
     if (speech.listening) {
       lastProcessedFuelTranscriptRef.current = "";
+      toast.dismiss(VOICE_TOAST_ID);
     }
   }, [speech.listening]);
 
@@ -244,6 +246,7 @@ const Registrar = () => {
         setLastHeard(transcript);
         toast.warning(
           "Não consegui entender. Tente dizer algo como: 'Abasteci 120 reais a 5,99 o litro e rodei até 85 mil KM'.",
+          { id: VOICE_TOAST_ID },
         );
         lastProcessedFuelTranscriptRef.current = transcript;
       }
@@ -290,10 +293,13 @@ const Registrar = () => {
       if (speech.listening) {
         speech.stop();
       }
-      toast.success("Campos preenchidos por voz. Confira antes de salvar.");
+      toast.success("Campos preenchidos por voz. Confira antes de salvar.", {
+        id: VOICE_TOAST_ID,
+      });
     } else {
       toast.warning(
         "Não encontrei dados para preencher. Fale sobre o valor total, preço por litro, litros ou KM.",
+        { id: VOICE_TOAST_ID },
       );
     }
   }, [speech.transcript, speech.listening, mode]);
@@ -693,7 +699,11 @@ const Registrar = () => {
                     type="button"
                     variant={speech.listening ? "destructive" : "secondary"}
                     size="sm"
-                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className={`flex items-center gap-2 border-white/30 ${
+                      speech.listening
+                        ? "bg-destructive hover:bg-destructive/90 text-white"
+                        : "bg-white/20 hover:bg-white/30 text-white"
+                    }`}
                     onClick={(event) => {
                       event.stopPropagation();
                       if (speech.listening) {
