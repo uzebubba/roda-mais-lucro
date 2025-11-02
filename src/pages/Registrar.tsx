@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type Dispatch,
@@ -191,11 +192,22 @@ const Registrar = () => {
   }, [entries]);
 
   const stats = useMemo(() => computeFuelStats(entries), [entries]);
+  const lastProcessedFuelTranscriptRef = useRef("");
+
+  useEffect(() => {
+    if (speech.listening) {
+      lastProcessedFuelTranscriptRef.current = "";
+    }
+  }, [speech.listening]);
 
   useEffect(() => {
     const transcript = speech.transcript ? speech.transcript.trim() : "";
 
     if (transcript.length === 0) {
+      return;
+    }
+
+    if (transcript === lastProcessedFuelTranscriptRef.current) {
       return;
     }
 
@@ -220,6 +232,7 @@ const Registrar = () => {
     if (!/\d/.test(transcript)) {
       if (!speech.listening) {
         setLastHeard(transcript);
+        lastProcessedFuelTranscriptRef.current = transcript;
       }
       return;
     }
@@ -232,9 +245,12 @@ const Registrar = () => {
         toast.warning(
           "Não consegui entender. Tente dizer algo como: 'Abasteci 120 reais a 5,99 o litro e rodei até 85 mil KM'.",
         );
+        lastProcessedFuelTranscriptRef.current = transcript;
       }
       return;
     }
+
+    setLastHeard(transcript);
 
     let updated = false;
     let hadApplicableData = false;
@@ -268,15 +284,17 @@ const Registrar = () => {
       }
     }
 
-    if (!speech.listening) {
-      setLastHeard(transcript);
-      if (updated || hadApplicableData) {
-        toast.success("Campos preenchidos por voz. Confira antes de salvar.");
-      } else {
-        toast.warning(
-          "Não encontrei dados para preencher. Fale sobre o valor total, preço por litro, litros ou KM.",
-        );
+    lastProcessedFuelTranscriptRef.current = transcript;
+
+    if (updated || hadApplicableData) {
+      if (speech.listening) {
+        speech.stop();
       }
+      toast.success("Campos preenchidos por voz. Confira antes de salvar.");
+    } else {
+      toast.warning(
+        "Não encontrei dados para preencher. Fale sobre o valor total, preço por litro, litros ou KM.",
+      );
     }
   }, [speech.transcript, speech.listening, mode]);
 

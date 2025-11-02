@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Minus, Mic, MicOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,15 +91,35 @@ const TransactionForm = ({
   }, [initialType, resetForm]);
 
   // When transcription arrives, parse and fill form
+  const lastProcessedTranscriptRef = useRef("");
+
   useEffect(() => {
-    if (!speech.transcript) return;
-    setLastHeard(speech.transcript);
-    const parsed = parseTransactionSpeech(speech.transcript);
-    if (!parsed) {
-      toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.");
+    if (speech.listening) {
+      lastProcessedTranscriptRef.current = "";
+    }
+  }, [speech.listening]);
+
+  useEffect(() => {
+    const currentTranscript = speech.transcript?.trim();
+    if (!currentTranscript) {
       return;
     }
 
+    if (currentTranscript === lastProcessedTranscriptRef.current) {
+      return;
+    }
+
+    const parsed = parseTransactionSpeech(currentTranscript);
+    if (!parsed) {
+      if (!speech.listening) {
+        setLastHeard(currentTranscript);
+        toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.");
+        lastProcessedTranscriptRef.current = currentTranscript;
+      }
+      return;
+    }
+
+    setLastHeard(currentTranscript);
     if (parsed.amount !== null) {
       setAmount(parsed.amount.toString());
     }
@@ -115,8 +135,14 @@ const TransactionForm = ({
       setCategory("");
     }
 
+    lastProcessedTranscriptRef.current = currentTranscript;
+
+    if (speech.listening) {
+      speech.stop();
+    }
+
     toast.success("Campos preenchidos por voz. Confira e salve.");
-  }, [speech.transcript]);
+  }, [speech.listening, speech.transcript]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -183,43 +209,6 @@ const TransactionForm = ({
         </TabsList>
 
         <Card className="p-5 space-y-4 glass-card">
-          {/* Voice toolbar */}
-          {micSupported && (
-            <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
-              <div className="text-xs text-muted-foreground">
-                Preencher por voz{" "}
-                {lastHeard && (
-                  <span className="text-[11px]">• "{lastHeard}"</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {speech.listening ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={speech.stop}
-                    className="gap-1"
-                    type="button"
-                  >
-                    <MicOff size={14} />
-                    Parar
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={speech.start}
-                    className="gap-1"
-                    type="button"
-                  >
-                    <Mic size={14} />
-                    Falar
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
           <div>
             <Label htmlFor="date">Data</Label>
             <Input
@@ -294,6 +283,43 @@ const TransactionForm = ({
               className="mt-1"
             />
           </div>
+
+          {/* Voice toolbar */}
+          {micSupported && (
+            <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/30 px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                Preencher por voz{" "}
+                {lastHeard && (
+                  <span className="text-[11px]">• "{lastHeard}"</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {speech.listening ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={speech.stop}
+                    className="gap-1"
+                    type="button"
+                  >
+                    <MicOff size={14} />
+                    Parar
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={speech.start}
+                    className="gap-1"
+                    type="button"
+                  >
+                    <Mic size={14} />
+                    Falar
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </Card>
       </Tabs>
 

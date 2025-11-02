@@ -219,8 +219,8 @@ const Perfil = () => {
       <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
         {/* User Info */}
         <Card className="p-6 glass-card animate-fade-in">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-4 sm:flex-1">
               <Avatar className="h-16 w-16 border border-primary/30 shadow-[0_0_25px_-12px_rgba(34,197,94,0.7)]">
                 <AvatarFallback className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary-glow text-xl text-primary-foreground">
                   <span className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_65%)]" />
@@ -245,7 +245,7 @@ const Perfil = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleStartEditing}
-                className="h-8 text-sm font-medium text-primary hover:text-primary/80"
+                className="h-8 self-start text-sm font-medium text-primary hover:text-primary/80 sm:self-auto"
               >
                 Editar dados
               </Button>
