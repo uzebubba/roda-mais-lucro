@@ -12,6 +12,32 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+const resolveOrigin = (req: Request) => {
+  const headerOrigin = req.headers.get("origin");
+  if (headerOrigin && headerOrigin !== "null") {
+    return headerOrigin;
+  }
+  return Deno.env.get("SITE_URL") ?? "http://localhost:5173";
+};
+
+const resolveReturnUrl = (candidate: unknown, origin: string, fallbackPath: string) => {
+  const buildUrl = (path: string) => new URL(path, origin).toString();
+
+  if (!candidate || typeof candidate !== "string") {
+    return buildUrl(fallbackPath);
+  }
+
+  try {
+    const url = new URL(candidate, origin);
+    if (url.origin !== origin) {
+      return buildUrl(fallbackPath);
+    }
+    return url.toString();
+  } catch (_error) {
+    return buildUrl(fallbackPath);
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -34,7 +60,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId } = await req.json();
+    const body = await req.json();
+    const { priceId, successUrl: requestedSuccessUrl, cancelUrl: requestedCancelUrl } = body ?? {};
     if (!priceId) throw new Error("priceId is required");
     logStep("Price ID received", { priceId });
 
@@ -48,7 +75,9 @@ serve(async (req) => {
       logStep("No existing customer, will create during checkout");
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = resolveOrigin(req);
+    const successUrl = resolveReturnUrl(requestedSuccessUrl, origin, "/assinatura?checkout=success");
+    const cancelUrl = resolveReturnUrl(requestedCancelUrl, origin, "/assinatura");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -59,10 +88,10 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/`,
-      cancel_url: `${origin}/assinatura`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url, successUrl, cancelUrl });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

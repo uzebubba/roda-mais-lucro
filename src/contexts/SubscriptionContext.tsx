@@ -1,15 +1,18 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 type SubscriptionStatus = {
   subscribed: boolean;
   product_id: string | null;
+  price_id: string | null;
   subscription_end: string | null;
   loading: boolean;
+  initialized: boolean;
+  lastCheckedUserId: string | null;
 };
 
-type SubscriptionContextValue = SubscriptionStatus & {
+type SubscriptionContextValue = Omit<SubscriptionStatus, "lastCheckedUserId"> & {
   checkSubscription: () => Promise<void>;
 };
 
@@ -35,23 +38,33 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
     subscribed: false,
     product_id: null,
+    price_id: null,
     subscription_end: null,
     loading: true,
+    initialized: false,
+    lastCheckedUserId: null,
   });
 
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     if (!user) {
       setSubscriptionStatus({
         subscribed: false,
         product_id: null,
+        price_id: null,
         subscription_end: null,
         loading: false,
+        initialized: true,
+        lastCheckedUserId: null,
       });
       return;
     }
 
     try {
-      setSubscriptionStatus(prev => ({ ...prev, loading: true }));
+      setSubscriptionStatus(prev => ({
+        ...prev,
+        loading: true,
+        initialized: prev.lastCheckedUserId === user.id ? prev.initialized : false,
+      }));
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         throw new Error("No active session");
@@ -68,23 +81,29 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       setSubscriptionStatus({
         subscribed: data.subscribed ?? false,
         product_id: data.product_id ?? null,
+        price_id: data.price_id ?? null,
         subscription_end: data.subscription_end ?? null,
         loading: false,
+        initialized: true,
+        lastCheckedUserId: user.id,
       });
     } catch (error) {
       console.error("Error checking subscription:", error);
       setSubscriptionStatus({
         subscribed: false,
         product_id: null,
+        price_id: null,
         subscription_end: null,
         loading: false,
+        initialized: true,
+        lastCheckedUserId: user.id,
       });
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     checkSubscription();
-  }, [user]);
+  }, [checkSubscription]);
 
   // Recheck subscription on page visibility change (e.g., returning from Stripe checkout)
   useEffect(() => {
@@ -98,15 +117,23 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [user]);
+  }, [checkSubscription, user]);
 
-  const value = useMemo<SubscriptionContextValue>(
-    () => ({
-      ...subscriptionStatus,
+  const value = useMemo<SubscriptionContextValue>(() => {
+    const initializedForUser = !user
+      ? true
+      : subscriptionStatus.initialized && subscriptionStatus.lastCheckedUserId === user.id;
+
+    return {
+      subscribed: subscriptionStatus.subscribed,
+      product_id: subscriptionStatus.product_id,
+      price_id: subscriptionStatus.price_id,
+      subscription_end: subscriptionStatus.subscription_end,
+      loading: subscriptionStatus.loading,
+      initialized: initializedForUser,
       checkSubscription,
-    }),
-    [subscriptionStatus]
-  );
+    };
+  }, [checkSubscription, subscriptionStatus, user?.id]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 };

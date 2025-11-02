@@ -12,7 +12,7 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const { subscribed, loading: subscriptionLoading } = useSubscription();
+  const { subscribed, loading: subscriptionLoading, initialized: subscriptionInitialized } = useSubscription();
   const location = useLocation();
   const navigate = useNavigate();
   useRealtimeSync(Boolean(user));
@@ -31,7 +31,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   }, [user, location.pathname, navigate]);
 
-  if (loading || subscriptionLoading) {
+  if (loading || !subscriptionInitialized || subscriptionLoading) {
     return <FullPageLoader />;
   }
 
