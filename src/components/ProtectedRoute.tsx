@@ -4,6 +4,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import FullPageLoader from "@/components/FullPageLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 type ProtectedRouteProps = {
   children: ReactNode;
@@ -11,6 +12,7 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const { subscribed, loading: subscriptionLoading } = useSubscription();
   const location = useLocation();
   const navigate = useNavigate();
   useRealtimeSync(Boolean(user));
@@ -29,12 +31,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   }, [user, location.pathname, navigate]);
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return <FullPageLoader />;
   }
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // Check if user has active subscription
+  if (!subscribed) {
+    return <Navigate to="/assinatura" replace />;
   }
 
   return <>{children}</>;
