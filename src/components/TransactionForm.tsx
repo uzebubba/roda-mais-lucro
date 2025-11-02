@@ -174,7 +174,7 @@ const TransactionForm = ({
     const transactionData = {
       type,
       amount: parseFloat(amount),
-      date: new Date(todayDateValue).toISOString(),
+      date: new Date().toISOString(),
       description:
         description || (type === "income" ? "Corridas do dia" : "Despesa"),
       ...(type === "income" && platform && { platform }),
