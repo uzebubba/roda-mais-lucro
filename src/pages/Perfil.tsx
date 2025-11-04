@@ -12,7 +12,6 @@ import {
   BadgeCheck,
   ChevronDown,
   Check,
-  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,7 +35,6 @@ import {
 } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
-import { Progress } from "@/components/ui/progress";
 
 const Perfil = () => {
   const navigate = useNavigate();
@@ -280,28 +278,21 @@ const Perfil = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 animate-fade-in">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="h-9 w-9 rounded-full"
-          >
-            <ArrowLeft size={18} />
-          </Button>
-          <h1 className="text-lg font-bold text-foreground">
-            Perfil
-          </h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSignOut}
-            className="h-9 px-3 text-xs"
-          >
-            Sair
-          </Button>
-        </div>
+      <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center justify-between gap-3 animate-fade-in">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/")}
+          className="rounded-full"
+        >
+          <ArrowLeft size={20} />
+        </Button>
+        <h1 className="flex-1 text-center text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+          Perfil
+        </h1>
+        <Button variant="outline" size="sm" onClick={handleSignOut}>
+          Sair
+        </Button>
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
@@ -382,236 +373,269 @@ const Perfil = () => {
         </Card>
 
         {/* Subscription overview */}
-        <div className="space-y-3 animate-fade-in">
-          <Card className="relative overflow-hidden border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-4">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.15),transparent_70%)]" />
-            <div className="relative space-y-4">
+        <div className="space-y-4 animate-fade-in">
+          <Card className="relative overflow-hidden border border-emerald-400/40 bg-gradient-to-br from-emerald-500/12 via-emerald-600/10 to-emerald-700/5 p-5 shadow-[0_18px_50px_-28px_rgba(16,185,129,0.65)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(34,197,94,0.3),transparent_60%),radial-gradient(circle_at_90%_10%,rgba(16,185,129,0.24),transparent_55%)]" />
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Gift className="h-5 w-5 text-primary" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 backdrop-blur">
+                  <Gift className="h-7 w-7 text-emerald-100" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
                     Período de teste
                   </p>
-                  <h3 className="mt-0.5 text-base font-bold text-foreground">
+                  <h3 className="mt-1 text-lg font-semibold text-emerald-50 sm:text-xl">
                     {subscribed
                       ? isTrialWindow
-                        ? "Teste ativo"
-                        : "Assinatura ativa"
-                      : "7 dias grátis"}
+                        ? "Teste premium ativo"
+                        : "Assinatura Bubba ativa"
+                      : "Ative seu teste premium de 7 dias"}
                   </h3>
-                </div>
-                <Button
-                  onClick={() => void checkSubscription()}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 shrink-0"
-                  disabled={subscriptionStatusLoading}
-                >
-                  {subscriptionStatusLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Atualizar"
+                  <p className="mt-2 text-sm text-emerald-100/90 sm:max-w-md">
+                    {!subscribed
+                      ? "Explore todos os recursos da Bubba sem compromisso. Você pode cancelar online antes dos 7 dias e não será cobrado."
+                      : isTrialWindow
+                      ? `Faltam ${trialDaysLeft ?? 0} dia${trialDaysLeft === 1 ? "" : "s"} para o fim do teste gratuito. Se não quiser continuar, cancele com um clique.`
+                      : nextBillingDate
+                      ? `Sua assinatura está ativa. A próxima cobrança está prevista para ${nextBillingDate}. Você pode gerenciar ou cancelar quando quiser.`
+                      : "Sua assinatura está ativa e pode ser gerenciada online quando desejar."}
+                  </p>
+                  {nextBillingDate && subscribed && (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200/90">
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      {isTrialWindow ? "Teste termina em" : "Próxima cobrança"}:{" "}
+                      <span className="font-semibold">{nextBillingDate}</span>
+                    </p>
                   )}
-                </Button>
-              </div>
-
-              {isTrialWindow && trialDaysLeft !== null && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Dias restantes</span>
-                    <span className="font-semibold text-foreground">{trialDaysLeft} de 7 dias</span>
-                  </div>
-                  <Progress value={(trialDaysLeft / 7) * 100} className="h-2" />
                 </div>
-              )}
-
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {!subscribed
-                  ? "Explore todos os recursos sem compromisso. Cancele online a qualquer momento."
-                  : isTrialWindow
-                  ? "Aproveite o período de teste. Cancele antes do fim para não ser cobrado."
-                  : nextBillingDate
-                  ? `Próxima cobrança: ${nextBillingDate}`
-                  : "Gerencie sua assinatura quando desejar."}
-              </p>
-
-              <div className="flex flex-col gap-2">
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
                 {subscribed ? (
-                  <Button
-                    onClick={handleSubscriptionPortal}
-                    disabled={subscriptionAction === "portal"}
-                    variant="outline"
-                    className="w-full"
-                    size="sm"
-                  >
-                    {subscriptionAction === "portal" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Abrindo...
-                      </>
-                    ) : (
-                      "Gerenciar assinatura"
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleSubscriptionPortal}
+                      disabled={subscriptionAction === "portal"}
+                      variant={isTrialWindow ? "destructive" : "outline"}
+                      className="w-full sm:w-48"
+                    >
+                      {subscriptionAction === "portal"
+                        ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Abrindo portal...
+                          </>
+                        )
+                        : isTrialWindow
+                        ? "Cancelar teste agora"
+                        : "Gerenciar assinatura"}
+                    </Button>
+                    <Button
+                      onClick={() => void checkSubscription()}
+                      variant="ghost"
+                      size="sm"
+                      className="text-emerald-200 hover:text-emerald-100"
+                      disabled={subscriptionStatusLoading}
+                    >
+                      {subscriptionStatusLoading ? "Atualizando..." : "Atualizar status"}
+                    </Button>
+                  </>
                 ) : (
-                  <Button onClick={handleGoToPlans} className="w-full" size="sm">
-                    Iniciar teste gratuito
-                  </Button>
+                  <>
+                    <Button onClick={handleGoToPlans} className="w-full sm:w-48">
+                      Iniciar teste gratuito
+                    </Button>
+                    <Button
+                      onClick={handleGoToPlans}
+                      variant="ghost"
+                      size="sm"
+                      className="text-emerald-200 hover:text-emerald-100"
+                    >
+                      Ver planos completos
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
+            <div className="relative z-10 flex items-center gap-2 text-xs text-emerald-200/80">
+              <BadgeCheck className="h-4 w-4" />
+              Cancelamento online imediato durante o período de teste.
+            </div>
           </Card>
 
-          <div className="space-y-2">
-            {!isAnnualActive && (
-              <Card className={`relative overflow-hidden border transition-all ${
-                isMonthlyActive 
-                  ? "border-primary/40 bg-primary/5" 
-                  : "border-border/40 hover:border-primary/30"
-              }`}>
-                {isMonthlyActive && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary-glow" />
-                )}
+          <div className="overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
+            <div className="divide-y divide-emerald-400/15">
+              {!isAnnualActive && (
                 <Collapsible
                   open={expandedPlan === "monthly"}
                   onOpenChange={(open) =>
                     setExpandedPlan((current) => (open ? "monthly" : current === "monthly" ? null : current))
                   }
                 >
-                  <div className="p-4">
+                  <div
+                    className={`relative p-5 transition-all sm:p-6 ${
+                      expandedPlan === "monthly" || isMonthlyActive
+                        ? "bg-emerald-500/12 shadow-[inset_0_1px_0_rgba(16,185,129,0.4)]"
+                        : "hover:bg-emerald-500/8"
+                    }`}
+                  >
+                    {isMonthlyActive && (
+                      <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary/80" aria-hidden />
+                    )}
                     <CollapsibleTrigger asChild>
                       <button
                         type="button"
-                        className="flex w-full items-start justify-between gap-3 text-left"
+                        className="flex w-full items-center justify-between gap-3 text-left"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                               Plano Mensal
                             </span>
                             {isMonthlyActive && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
                                 <BadgeCheck className="h-3 w-3" />
                                 Ativo
                               </span>
                             )}
                           </div>
-                          <p className="text-xl font-bold text-foreground mb-1">R$ 29,90<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+                          <p className="mt-1 text-lg font-semibold text-foreground">R$ 29,90/mês</p>
                           <p className="text-xs text-muted-foreground">
-                            Controle mês a mês com suporte prioritário
+                            Controle seu negócio mês a mês com suporte prioritário.
                           </p>
                         </div>
                         <ChevronDown
-                          className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${
                             expandedPlan === "monthly" ? "rotate-180" : ""
                           }`}
                         />
                       </button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4 pt-4 border-t border-border/40">
-                      <ul className="space-y-2 mb-4">
+                    <CollapsibleContent className="mt-5 border-t border-emerald-400/20 pt-4 text-sm text-muted-foreground">
+                      <ul className="space-y-2">
                         {[
                           "Registro ilimitado de corridas e despesas",
-                          "Metas em tempo real",
-                          "Sincronização na nuvem",
+                          "Metas diárias e mensais em tempo real",
+                          "Sincronização na nuvem e suporte prioritário",
                         ].map((feature) => (
-                          <li key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          <li key={feature} className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary" />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
-                      <Button
-                        onClick={isMonthlyActive ? handleSubscriptionPortal : handleGoToPlans}
-                        className="w-full"
-                        variant={isMonthlyActive ? "outline" : "default"}
-                        size="sm"
-                      >
-                        {isMonthlyActive ? "Gerenciar plano" : "Assinar mensal"}
-                      </Button>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          onClick={isMonthlyActive ? handleSubscriptionPortal : handleGoToPlans}
+                          className="sm:flex-1"
+                          variant={isMonthlyActive ? "outline" : "default"}
+                        >
+                          {isMonthlyActive ? "Gerenciar plano mensal" : "Assinar plano mensal"}
+                        </Button>
+                        {!isMonthlyActive && (
+                          <Button
+                            onClick={handleGoToPlans}
+                            variant="ghost"
+                            className="sm:w-auto"
+                            size="sm"
+                          >
+                            Ver benefícios completos
+                          </Button>
+                        )}
+                      </div>
                     </CollapsibleContent>
                   </div>
                 </Collapsible>
-              </Card>
-            )}
-
-            <Card className={`relative overflow-hidden border transition-all ${
-              isAnnualActive 
-                ? "border-primary/40 bg-primary/5" 
-                : "border-primary/30 hover:border-primary/40"
-            }`}>
-              {isAnnualActive ? (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary-glow" />
-              ) : (
-                <div className="absolute top-2 right-2 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
-                  -44%
-                </div>
               )}
+
               <Collapsible
                 open={expandedPlan === "annual"}
                 onOpenChange={(open) =>
                   setExpandedPlan((current) => (open ? "annual" : current === "annual" ? null : current))
                 }
               >
-                <div className="p-4">
+                <div
+                  className={`relative p-5 transition-all sm:p-6 ${
+                    expandedPlan === "annual" || isAnnualActive
+                      ? "bg-emerald-500/12 shadow-[inset_0_1px_0_rgba(16,185,129,0.4)]"
+                      : "hover:bg-emerald-500/8"
+                  }`}
+                >
+                  {isAnnualActive && (
+                    <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary/80" aria-hidden />
+                  )}
+                  {!isAnnualActive && (
+                    <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-emerald-400/60" aria-hidden />
+                  )}
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
-                      className="flex w-full items-start justify-between gap-3 text-left"
+                      className="flex w-full items-center justify-between gap-3 text-left"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                             Plano Anual
                           </span>
-                          {isAnnualActive && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          {isAnnualActive ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
                               <BadgeCheck className="h-3 w-3" />
                               Ativo
                             </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              Economia 44%
+                            </span>
                           )}
                         </div>
-                        <p className="text-xl font-bold text-foreground mb-1">
-                          R$ 199,90<span className="text-sm font-normal text-muted-foreground">/ano</span>
-                        </p>
+                        <p className="mt-1 text-lg font-semibold text-foreground">R$ 199,90/ano</p>
                         <p className="text-xs text-muted-foreground">
-                          R$ 16,50/mês · Economia de 44%
+                          Equivalente a R$ 16,50 por mês com economia de 44%.
                         </p>
                       </div>
                       <ChevronDown
-                        className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
+                        className={`h-5 w-5 text-muted-foreground transition-transform ${
                           expandedPlan === "annual" ? "rotate-180" : ""
                         }`}
                       />
                     </button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 pt-4 border-t border-border/40">
-                    <ul className="space-y-2 mb-4">
+                  <CollapsibleContent className="mt-5 border-t border-emerald-400/20 pt-4 text-sm text-muted-foreground">
+                    <ul className="space-y-2">
                       {[
-                        "Todos os recursos do mensal",
-                        "12 meses pelo preço de 6,7 meses",
-                        "Prioridade máxima em suporte",
+                        "Todos os recursos do plano mensal inclusos",
+                        "12 meses pelo valor de 6,7 meses",
+                        "Prioridade máxima em novidades e suporte",
                       ].map((feature) => (
-                        <li key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        <li key={feature} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
                           <span>{feature}</span>
                         </li>
                       ))}
                     </ul>
-                    <Button
-                      onClick={isAnnualActive ? handleSubscriptionPortal : handleGoToPlans}
-                      className="w-full"
-                      variant={isAnnualActive ? "outline" : "default"}
-                      size="sm"
-                    >
-                      {isAnnualActive ? "Gerenciar plano" : "Assinar anual"}
-                    </Button>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                      <Button
+                        onClick={isAnnualActive ? handleSubscriptionPortal : handleGoToPlans}
+                        className="sm:flex-1"
+                        variant={isAnnualActive ? "outline" : "default"}
+                      >
+                        {isAnnualActive ? "Gerenciar plano anual" : "Assinar plano anual"}
+                      </Button>
+                      {!isAnnualActive && (
+                        <Button
+                          onClick={handleGoToPlans}
+                          variant="ghost"
+                          className="sm:w-auto"
+                          size="sm"
+                        >
+                          Comparar com outros planos
+                        </Button>
+                      )}
+                    </div>
                   </CollapsibleContent>
                 </div>
               </Collapsible>
-            </Card>
+            </div>
           </div>
         </div>
 
