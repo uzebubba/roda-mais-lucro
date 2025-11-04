@@ -128,7 +128,14 @@ const Registrar = () => {
   const [kmCurrent, setKmCurrent] = useState("");
   const [kmUpdate, setKmUpdate] = useState("");
   const speech = useSpeechRecognition();
-  const micSupported = speech.supported;
+  const {
+    supported: micSupported,
+    listening,
+    transcript,
+    error: speechError,
+    start: startSpeech,
+    stop: stopSpeech,
+  } = speech;
   const [lastHeard, setLastHeard] = useState("");
 
   const fuelEntriesQuery = useQuery({
@@ -198,20 +205,20 @@ const Registrar = () => {
   const lastProcessedFuelTranscriptRef = useRef("");
 
   useEffect(() => {
-    if (speech.listening) {
+    if (listening) {
       lastProcessedFuelTranscriptRef.current = "";
       toast.dismiss(VOICE_TOAST_ID);
     }
-  }, [speech.listening]);
+  }, [listening]);
 
   useEffect(() => {
-    const transcript = speech.transcript ? speech.transcript.trim() : "";
+    const cleanedTranscript = transcript ? transcript.trim() : "";
 
-    if (transcript.length === 0) {
+    if (cleanedTranscript.length === 0) {
       return;
     }
 
-    if (transcript === lastProcessedFuelTranscriptRef.current) {
+    if (cleanedTranscript === lastProcessedFuelTranscriptRef.current) {
       return;
     }
 
@@ -233,29 +240,29 @@ const Registrar = () => {
       return changed;
     };
 
-    if (!/\d/.test(transcript)) {
-      if (!speech.listening) {
-        setLastHeard(transcript);
-        lastProcessedFuelTranscriptRef.current = transcript;
+    if (!/\d/.test(cleanedTranscript)) {
+      if (!listening) {
+        setLastHeard(cleanedTranscript);
+        lastProcessedFuelTranscriptRef.current = cleanedTranscript;
       }
       return;
     }
 
-    const parsed = parseFuelSpeech(transcript);
+    const parsed = parseFuelSpeech(cleanedTranscript);
 
     if (!parsed) {
-      if (!speech.listening) {
-        setLastHeard(transcript);
+      if (!listening) {
+        setLastHeard(cleanedTranscript);
         toast.warning(
           "Não consegui entender. Tente dizer algo como: 'Abasteci 120 reais a 5,99 o litro e rodei até 85 mil KM'.",
           { id: VOICE_TOAST_ID },
         );
-        lastProcessedFuelTranscriptRef.current = transcript;
+        lastProcessedFuelTranscriptRef.current = cleanedTranscript;
       }
       return;
     }
 
-    setLastHeard(transcript);
+    setLastHeard(cleanedTranscript);
 
     let updated = false;
     let hadApplicableData = false;
@@ -289,11 +296,11 @@ const Registrar = () => {
       }
     }
 
-    lastProcessedFuelTranscriptRef.current = transcript;
+    lastProcessedFuelTranscriptRef.current = cleanedTranscript;
 
     if (updated || hadApplicableData) {
-      if (speech.listening) {
-        speech.stop();
+      if (listening) {
+        stopSpeech();
       }
       toast.success("Campos preenchidos por voz. Confira antes de salvar.", {
         id: VOICE_TOAST_ID,
@@ -304,14 +311,14 @@ const Registrar = () => {
         { id: VOICE_TOAST_ID },
       );
     }
-  }, [speech.transcript, speech.listening, mode]);
+  }, [transcript, listening, mode, stopSpeech]);
 
   useEffect(() => {
-    if (!speech.error) {
+    if (!speechError) {
       return;
     }
     toast.error("Não foi possível usar o microfone. Verifique as permissões do navegador.");
-  }, [speech.error]);
+  }, [speechError]);
 
   const parseNumber = (raw: string) => {
     if (!raw) return 0;
@@ -727,23 +734,23 @@ const Registrar = () => {
               {micSupported && (
                 <Button
                   type="button"
-                  variant={speech.listening ? "destructive" : "secondary"}
+                  variant={listening ? "destructive" : "secondary"}
                   size="sm"
                   className={`flex w-full items-center justify-center gap-2 border border-white/20 sm:w-auto ${
-                    speech.listening
+                    listening
                       ? "bg-destructive hover:bg-destructive/90 text-white"
                       : "bg-white/15 hover:bg-white/25 text-white"
                   }`}
                   onClick={() => {
-                    if (speech.listening) {
-                      speech.stop();
+                    if (listening) {
+                      stopSpeech();
                     } else {
-                      speech.start();
+                      startSpeech();
                     }
                   }}
                 >
-                  {speech.listening ? <MicOff size={16} /> : <Mic size={16} />}
-                  {speech.listening ? "Parar captura" : "Falar"}
+                  {listening ? <MicOff size={16} /> : <Mic size={16} />}
+                  {listening ? "Parar captura" : "Falar"}
                 </Button>
               )}
               <Button

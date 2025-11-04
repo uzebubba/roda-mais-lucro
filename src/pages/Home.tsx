@@ -269,17 +269,11 @@ const Home = () => {
   const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
   const workSessions = workSessionsQuery.data ?? [];
   const userProfile = profileQuery.data;
-  const fixedExpenses = fixedExpensesQuery.data ?? [];
-
-  const todayDay = useMemo(() => {
-    return new Date().getDate();
-  }, [dayKey]);
-
   const dueTodayExpenses = useMemo(() => {
-    return fixedExpenses.filter(
-      (expense) => !expense.paid && expense.dueDay === todayDay,
-    );
-  }, [fixedExpenses, todayDay]);
+    const expenses = fixedExpensesQuery.data ?? [];
+    const today = new Date().getDate();
+    return expenses.filter((expense) => !expense.paid && expense.dueDay === today);
+  }, [fixedExpensesQuery.data]);
 
   const formatCurrency = useCallback(
     (value: number) =>

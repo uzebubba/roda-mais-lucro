@@ -453,124 +453,6 @@ const Perfil = () => {
 
         {/* Assinatura e planos */}
         <div className="space-y-4 animate-fade-in">
-          <Card className="relative overflow-hidden border border-emerald-400/40 bg-gradient-to-br from-emerald-500/12 via-emerald-600/10 to-emerald-700/5 p-5 shadow-[0_18px_50px_-28px_rgba(16,185,129,0.65)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(34,197,94,0.3),transparent_60%),radial-gradient(circle_at_90%_10%,rgba(16,185,129,0.24),transparent_55%)]" />
-            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 backdrop-blur">
-                  <Gift className="h-7 w-7 text-emerald-100" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-                    Período de teste
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold text-emerald-50 sm:text-xl">
-                    {subscribed
-                      ? isTrialWindow
-                        ? "Teste premium ativo"
-                        : "Assinatura Bubba ativa"
-                      : "Ative seu teste premium de 7 dias"}
-                  </h3>
-                  <p className="mt-2 text-sm text-emerald-100/90 sm:max-w-md">
-                    {!subscribed
-                      ? "Explore todos os recursos da Bubba sem compromisso. Você pode cancelar online antes dos 7 dias e não será cobrado."
-                      : isTrialWindow
-                      ? `Faltam ${trialDaysLeft ?? 0} dia${trialDaysLeft === 1 ? "" : "s"} para o fim do teste gratuito. Se não quiser continuar, cancele com um clique.`
-                      : nextBillingDate
-                      ? `Sua assinatura está ativa. A próxima cobrança está prevista para ${nextBillingDate}. Você pode gerenciar ou cancelar quando quiser.`
-                      : "Sua assinatura está ativa e pode ser gerenciada online quando desejar."}
-                  </p>
-                  {nextBillingDate && subscribed && (
-                    <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200/90">
-                      <CalendarClock className="h-3.5 w-3.5" />
-                      {isTrialWindow ? "Teste termina em" : "Próxima cobrança"}:{" "}
-                      <span className="font-semibold">{nextBillingDate}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-                {subscribed ? (
-                  <>
-                    <Button
-                      onClick={handleSubscriptionPortal}
-                      disabled={subscriptionAction !== null}
-                      variant="outline"
-                      className="w-full sm:w-48"
-                    >
-                      {subscriptionAction !== null
-                        ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Abrindo portal...
-                          </>
-                        )
-                        : "Gerenciar assinatura"}
-                    </Button>
-                    {isTrialWindow ? (
-                      <Button
-                        onClick={handleCancelTrial}
-                        variant="destructive"
-                        size="sm"
-                        className="w-full sm:w-48"
-                        disabled={subscriptionAction !== null}
-                      >
-                        {subscriptionAction === "cancel-trial"
-                          ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Cancelando...
-                            </>
-                          )
-                          : subscriptionAction === "portal"
-                          ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Abrindo portal...
-                            </>
-                          )
-                          : (
-                            <>
-                              <X className="mr-2 h-4 w-4" />
-                              Cancelar teste agora
-                            </>
-                          )}
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => void checkSubscription()}
-                        variant="ghost"
-                        size="sm"
-                        className="text-emerald-200 hover:text-emerald-100"
-                        disabled={subscriptionStatusLoading}
-                      >
-                        {subscriptionStatusLoading ? "Atualizando..." : "Atualizar status"}
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Button onClick={handleGoToPlans} className="w-full sm:w-48">
-                      Iniciar teste gratuito
-                    </Button>
-                    <Button
-                      onClick={handleGoToPlans}
-                      variant="ghost"
-                      size="sm"
-                      className="text-emerald-200 hover:text-emerald-100"
-                    >
-                      Ver planos completos
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="relative z-10 flex items-center gap-2 text-xs text-emerald-200/80">
-              <BadgeCheck className="h-4 w-4" />
-              Cancelamento online imediato durante o período de teste.
-            </div>
-          </Card>
-
           <div className="overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
             <div className="divide-y divide-emerald-400/15">
               {!isAnnualActive && (
@@ -745,6 +627,124 @@ const Perfil = () => {
               </Collapsible>
             </div>
           </div>
+
+          <Card className="relative overflow-hidden border border-emerald-400/40 bg-gradient-to-br from-emerald-500/12 via-emerald-600/10 to-emerald-700/5 p-5 shadow-[0_18px_50px_-28px_rgba(16,185,129,0.65)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(34,197,94,0.3),transparent_60%),radial-gradient(circle_at_90%_10%,rgba(16,185,129,0.24),transparent_55%)]" />
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 backdrop-blur">
+                  <Gift className="h-7 w-7 text-emerald-100" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+                    Período de teste
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-emerald-50 sm:text-xl">
+                    {subscribed
+                      ? isTrialWindow
+                        ? "Teste premium ativo"
+                        : "Assinatura Bubba ativa"
+                      : "Ative seu teste premium de 7 dias"}
+                  </h3>
+                  <p className="mt-2 text-sm text-emerald-100/90 sm:max-w-md">
+                    {!subscribed
+                      ? "Explore todos os recursos da Bubba sem compromisso. Você pode cancelar online antes dos 7 dias e não será cobrado."
+                      : isTrialWindow
+                      ? `Faltam ${trialDaysLeft ?? 0} dia${trialDaysLeft === 1 ? "" : "s"} para o fim do teste gratuito. Se não quiser continuar, cancele com um clique.`
+                      : nextBillingDate
+                      ? `Sua assinatura está ativa. A próxima cobrança está prevista para ${nextBillingDate}. Você pode gerenciar ou cancelar quando quiser.`
+                      : "Sua assinatura está ativa e pode ser gerenciada online quando desejar."}
+                  </p>
+                  {nextBillingDate && subscribed && (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200/90">
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      {isTrialWindow ? "Teste termina em" : "Próxima cobrança"}:{" "}
+                      <span className="font-semibold">{nextBillingDate}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                {subscribed ? (
+                  <>
+                    <Button
+                      onClick={handleSubscriptionPortal}
+                      disabled={subscriptionAction !== null}
+                      variant="outline"
+                      className="w-full sm:w-48"
+                    >
+                      {subscriptionAction !== null
+                        ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Abrindo portal...
+                          </>
+                        )
+                        : "Gerenciar assinatura"}
+                    </Button>
+                    {isTrialWindow ? (
+                      <Button
+                        onClick={handleCancelTrial}
+                        variant="destructive"
+                        size="sm"
+                        className="w-full sm:w-48"
+                        disabled={subscriptionAction !== null}
+                      >
+                        {subscriptionAction === "cancel-trial"
+                          ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Cancelando...
+                            </>
+                          )
+                          : subscriptionAction === "portal"
+                          ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Abrindo portal...
+                            </>
+                          )
+                          : (
+                            <>
+                              <X className="mr-2 h-4 w-4" />
+                              Cancelar teste agora
+                            </>
+                          )}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => void checkSubscription()}
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-200 hover:text-emerald-100"
+                        disabled={subscriptionStatusLoading}
+                      >
+                        {subscriptionStatusLoading ? "Atualizando..." : "Atualizar status"}
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={handleGoToPlans} className="w-full sm:w-48">
+                      Iniciar teste gratuito
+                    </Button>
+                    <Button
+                      onClick={handleGoToPlans}
+                      variant="ghost"
+                      size="sm"
+                      className="text-emerald-200 hover:text-emerald-100"
+                    >
+                      Ver planos completos
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="relative z-10 flex items-center gap-2 text-xs text-emerald-200/80">
+              <BadgeCheck className="h-4 w-4" />
+              Cancelamento online imediato durante o período de teste.
+            </div>
+          </Card>
         </div>
       </main>
 

@@ -96,14 +96,16 @@ const TransactionForm = ({
   const VOICE_TOAST_ID = "transaction-voice-feedback";
 
   useEffect(() => {
-    if (speech.listening) {
+    if (listening) {
       lastProcessedTranscriptRef.current = "";
       toast.dismiss(VOICE_TOAST_ID);
     }
-  }, [speech.listening]);
+  }, [listening]);
+
+  const { listening, transcript, stop } = speech;
 
   useEffect(() => {
-    const currentTranscript = speech.transcript?.trim();
+    const currentTranscript = transcript?.trim();
     if (!currentTranscript) {
       return;
     }
@@ -114,7 +116,7 @@ const TransactionForm = ({
 
     const parsed = parseTransactionSpeech(currentTranscript);
     if (!parsed) {
-      if (!speech.listening) {
+      if (!listening) {
         setLastHeard(currentTranscript);
         toast.warning("Não entendi. Tente dizer: 'Gastei 50 reais de gasolina'.", {
           id: VOICE_TOAST_ID,
@@ -142,14 +144,14 @@ const TransactionForm = ({
 
     lastProcessedTranscriptRef.current = currentTranscript;
 
-    if (speech.listening) {
-      speech.stop();
+    if (listening) {
+      stop();
     }
 
     toast.success("Campos preenchidos por voz. Confira e salve.", {
       id: VOICE_TOAST_ID,
     });
-  }, [speech.listening, speech.transcript]);
+  }, [listening, stop, transcript]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
