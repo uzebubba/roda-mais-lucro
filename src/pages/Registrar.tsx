@@ -677,7 +677,7 @@ const Registrar = () => {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     KM rodados
                   </p>
-                  <p className="text-xl font-semibold text-foreground">
+                  <p className="text-xl font-semibold text-foreground leading-tight">
                     {derived.kmSinceLast > 0
                       ? formatNumber(derived.kmSinceLast, 0)
                       : "--"}
@@ -691,7 +691,7 @@ const Registrar = () => {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     Consumo (km/L)
                   </p>
-                  <p className="text-xl font-semibold text-foreground">
+                  <p className="text-xl font-semibold text-foreground leading-tight">
                     {derived.consumption > 0
                       ? formatNumber(derived.consumption)
                       : "--"}
@@ -708,7 +708,7 @@ const Registrar = () => {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     Custo por km
                   </p>
-                  <p className="text-xl font-semibold text-foreground">
+                  <p className="text-xl font-semibold text-foreground leading-tight">
                     {derived.costPerKm > 0
                       ? formatCurrency(derived.costPerKm)
                       : "--"}

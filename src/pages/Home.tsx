@@ -8,6 +8,7 @@ import {
   Loader2,
   AlertTriangle,
   X,
+  CalendarClock,
 } from "lucide-react";
 import { SummaryCard } from "@/components/SummaryCard";
 import { DailyStatsCard } from "@/components/DailyStatsCard";
@@ -41,11 +42,13 @@ import {
   setDailyGoal as persistDailyGoal,
   setMonthlyGoal as persistMonthlyGoal,
   getWorkSessions,
+  getFixedExpenses,
   type TodayStats,
   type WeeklyWorkSummary,
   type UserProfile,
   type WorkSession,
   type Transaction,
+  type FixedExpense,
 } from "@/lib/supabase-storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from "recharts";
 import { toast } from "sonner";
@@ -204,6 +207,13 @@ const Home = () => {
     retry: false,
   });
 
+  const fixedExpensesQuery = useQuery({
+    queryKey: ["fixedExpenses"],
+    queryFn: getFixedExpenses,
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   useEffect(() => {
     if (transactionsQuery.error) {
       const error = transactionsQuery.error;
@@ -238,6 +248,17 @@ const Home = () => {
   }, [profileQuery.error]);
 
   useEffect(() => {
+    if (fixedExpensesQuery.error) {
+      const error = fixedExpensesQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar suas despesas fixas.";
+      toast.error(message);
+    }
+  }, [fixedExpensesQuery.error]);
+
+  useEffect(() => {
     if (!isAuthenticated || typeof window === "undefined") {
       setShowMigrationBanner(false);
       return;
@@ -248,6 +269,26 @@ const Home = () => {
   const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
   const workSessions = workSessionsQuery.data ?? [];
   const userProfile = profileQuery.data;
+  const fixedExpenses = fixedExpensesQuery.data ?? [];
+
+  const todayDay = useMemo(() => {
+    return new Date().getDate();
+  }, [dayKey]);
+
+  const dueTodayExpenses = useMemo(() => {
+    return fixedExpenses.filter(
+      (expense) => !expense.paid && expense.dueDay === todayDay,
+    );
+  }, [fixedExpenses, todayDay]);
+
+  const formatCurrency = useCallback(
+    (value: number) =>
+      value.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+    [],
+  );
 
   const refreshDerivedData = useCallback(
     async (currentTransactions: Transaction[], sessions: WorkSession[]) => {
@@ -564,6 +605,62 @@ const Home = () => {
               </button>
             </div>
           </div>
+        )}
+
+        {dueTodayExpenses.length > 0 && (
+          <Card className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-background/92 to-background/95 p-4 sm:p-5 animate-fade-in">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,rgba(251,191,36,0.4),transparent_55%),radial-gradient(circle_at_90%_90%,rgba(245,158,11,0.3),transparent_60%)]" />
+            <div className="relative z-10 space-y-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-100 shadow-[0_12px_32px_-24px_rgba(251,191,36,0.8)]">
+                    <CalendarClock className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/80">
+                      Atenção
+                    </p>
+                    <h2 className="mt-1 text-base font-semibold leading-tight text-foreground">
+                      {dueTodayExpenses.length === 1
+                        ? "Você tem 1 despesa vencendo hoje"
+                        : `Você tem ${dueTodayExpenses.length} despesas vencendo hoje`}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Revise as contas e marque como pagas para manter o controle em dia.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 border-amber-300/60 bg-background/60 text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
+                  onClick={() => navigate("/fixas")}
+                >
+                  Ver despesas
+                </Button>
+              </div>
+              <ul className="space-y-2 text-sm">
+                {dueTodayExpenses.map((expense: FixedExpense) => (
+                  <li
+                    key={expense.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-background/70 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-foreground capitalize">
+                        {expense.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Hoje • {formatCurrency(expense.amount)}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-amber-100">
+                      {`Dia ${String(expense.dueDay).padStart(2, "0")}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Card>
         )}
 
         <div className="grid grid-cols-3 gap-3 animate-fade-in">
