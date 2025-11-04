@@ -91,9 +91,11 @@ const TransactionForm = ({
   }, [initialType, resetForm]);
 
   // When transcription arrives, parse and fill form
-  const lastProcessedTranscriptRef = useRef("");
+const lastProcessedTranscriptRef = useRef("");
 
-  const VOICE_TOAST_ID = "transaction-voice-feedback";
+const VOICE_TOAST_ID = "transaction-voice-feedback";
+
+  const { listening, transcript, stop } = speech;
 
   useEffect(() => {
     if (listening) {
@@ -101,8 +103,6 @@ const TransactionForm = ({
       toast.dismiss(VOICE_TOAST_ID);
     }
   }, [listening]);
-
-  const { listening, transcript, stop } = speech;
 
   useEffect(() => {
     const currentTranscript = transcript?.trim();

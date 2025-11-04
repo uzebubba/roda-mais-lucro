@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Fuel,
   Gauge,
+  Droplet,
   Loader2,
   Mic,
   MicOff,
@@ -544,15 +545,21 @@ const Registrar = () => {
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(34,197,94,0.18),transparent_60%),radial-gradient(circle_at_100%_100%,rgba(16,185,129,0.14),transparent_65%)]"
             aria-hidden
           />
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
+          <span className="pointer-events-none absolute inset-x-6 top-0 h-[2px] rounded-full bg-gradient-to-r from-emerald-400/60 via-emerald-300/80 to-emerald-400/60" />
+          <div className="relative z-10 space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-[0_12px_32px_-28px_rgba(16,185,129,0.75)]">
+                  <Droplet size={20} />
+                </span>
+                <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
                   Combustível
                 </p>
                 <h2 className="mt-1 text-lg font-semibold leading-tight text-foreground">
                   Registro de Abastecimento
                 </h2>
+              </div>
               </div>
               <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 {mode === "automatic" ? "Modo automático" : "Modo manual"}
@@ -580,7 +587,7 @@ const Registrar = () => {
             </Tabs>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-emerald-400/20 bg-background/70 p-3 shadow-[0_10px_30px_-28px_rgba(16,185,129,0.6)] backdrop-blur">
                 <Label
                   htmlFor="pricePerLiter"
                   className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
@@ -600,7 +607,7 @@ const Registrar = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-emerald-400/20 bg-background/70 p-3 shadow-[0_10px_30px_-28px_rgba(16,185,129,0.6)] backdrop-blur">
                 <Label
                   htmlFor="totalCost"
                   className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
@@ -620,7 +627,7 @@ const Registrar = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-emerald-400/20 bg-background/70 p-3 shadow-[0_10px_30px_-28px_rgba(16,185,129,0.6)] backdrop-blur">
                 <Label
                   htmlFor="liters"
                   className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
@@ -648,7 +655,7 @@ const Registrar = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 rounded-2xl border border-emerald-400/20 bg-background/70 p-3 shadow-[0_10px_30px_-28px_rgba(16,185,129,0.6)] backdrop-blur">
                 <Label
                   htmlFor="kmCurrent"
                   className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
