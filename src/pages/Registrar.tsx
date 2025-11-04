@@ -671,39 +671,39 @@ const Registrar = () => {
             </div>
 
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
                   Resumo do abastecimento
                 </p>
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Atualizado em tempo real
                 </span>
               </div>
-              <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                <div className="space-y-1.5">
+              <div className="mt-4 flex flex-col divide-y divide-emerald-400/15 sm:grid sm:grid-cols-3 sm:gap-4 sm:divide-y-0 sm:divide-x">
+                <div className="flex flex-col gap-2 pt-3 sm:pt-0 sm:px-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     KM rodados
                   </p>
-                  <p className="text-xl font-semibold text-foreground leading-tight">
+                  <p className="text-xl font-semibold text-foreground leading-tight sm:text-2xl">
                     {derived.kmSinceLast > 0
                       ? formatNumber(derived.kmSinceLast, 0)
                       : "--"}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     Último abastecimento:{" "}
                     {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
                   </p>
                 </div>
-                <div className="space-y-1.5 border-t border-emerald-400/15 pt-3 sm:border-t-0 sm:border-l sm:border-emerald-400/15 sm:pl-3">
+                <div className="flex flex-col gap-2 py-3 sm:py-0 sm:px-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     Consumo (km/L)
                   </p>
-                  <p className="text-xl font-semibold text-foreground leading-tight">
+                  <p className="text-xl font-semibold text-foreground leading-tight sm:text-2xl">
                     {derived.consumption > 0
                       ? formatNumber(derived.consumption)
                       : "--"}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     Média histórica:{" "}
                     {stats.averageConsumption > 0
                       ? formatNumber(stats.averageConsumption)
@@ -711,16 +711,16 @@ const Registrar = () => {
                     km/L
                   </p>
                 </div>
-                <div className="space-y-1.5 border-t border-emerald-400/15 pt-3 sm:border-t-0 sm:border-l sm:border-emerald-400/15 sm:pl-3">
+                <div className="flex flex-col gap-2 pt-3 sm:pt-0 sm:px-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                     Custo por km
                   </p>
-                  <p className="text-xl font-semibold text-foreground leading-tight">
+                  <p className="text-xl font-semibold text-foreground leading-tight sm:text-2xl">
                     {derived.costPerKm > 0
                       ? formatCurrency(derived.costPerKm)
                       : "--"}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     Média histórica:{" "}
                     {stats.averageCostPerKm > 0
                       ? formatCurrency(stats.averageCostPerKm)
