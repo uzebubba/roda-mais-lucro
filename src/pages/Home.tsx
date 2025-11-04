@@ -627,7 +627,7 @@ const Home = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-9 border-amber-300/60 bg-background/60 text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
+                  className="h-9 w-full sm:w-auto border-amber-300/60 bg-background/60 text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
                   onClick={() => navigate("/fixas")}
                 >
                   Ver despesas
@@ -637,7 +637,7 @@ const Home = () => {
                 {dueTodayExpenses.map((expense: FixedExpense) => (
                   <li
                     key={expense.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-background/70 px-3 py-2"
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-amber-400/20 bg-background/70 px-3 py-2"
                   >
                     <div>
                       <p className="text-sm font-semibold text-foreground capitalize">
@@ -657,7 +657,7 @@ const Home = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-3 gap-3 animate-fade-in">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 animate-fade-in">
           <SummaryCard
             title="Ganhei"
             value={totals.income}
@@ -678,11 +678,11 @@ const Home = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 animate-fade-in">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 animate-fade-in">
           <Button
             size="lg"
             onClick={() => setActiveType("income")}
-            className="h-14 gap-2 bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
+            className="h-14 gap-2 justify-center bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow"
           >
             <Plus size={20} />
             Registrar ganho
@@ -691,7 +691,7 @@ const Home = () => {
             size="lg"
             variant="destructive"
             onClick={() => setActiveType("expense")}
-            className="h-14 gap-2"
+            className="h-14 gap-2 justify-center"
           >
             <Minus size={20} />
             Registrar gasto
