@@ -507,16 +507,23 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b border-border/40 px-3 py-1.5">
-        <div className="mx-auto w-full max-w-md leading-tight">
-          <h1 className="text-lg font-semibold text-foreground">
-            {greetingParts.before}
-            <span className="font-bold text-primary">{displayName}</span>
-            {greetingParts.after}
-          </h1>
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            Seu controle financeiro inteligente
-          </p>
+      <header className="border-b border-border/30 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="mx-auto w-full max-w-md px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
+              <Wallet className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-semibold text-foreground truncate">
+                {greetingParts.before}
+                <span className="text-primary">{displayName}</span>
+                {greetingParts.after}
+              </h1>
+              <p className="text-xs text-muted-foreground truncate">
+                Seu controle financeiro inteligente
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
