@@ -463,163 +463,179 @@ const Perfil = () => {
             </div>
           </Card>
 
-          <div className="space-y-3">
-            <Collapsible
-              open={expandedPlan === "monthly"}
-              onOpenChange={(open) =>
-                setExpandedPlan((current) => (open ? "monthly" : current === "monthly" ? null : current))
-              }
-            >
-              <Card
-                className={`border border-border/60 p-4 transition-all ${
-                  isMonthlyActive ? "border-primary/60 bg-primary/5 shadow-lg shadow-primary/10" : "bg-card"
-                }`}
-              >
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-3 text-left"
+          <div className="overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
+            <div className="divide-y divide-emerald-400/15">
+              {!isAnnualActive && (
+                <Collapsible
+                  open={expandedPlan === "monthly"}
+                  onOpenChange={(open) =>
+                    setExpandedPlan((current) => (open ? "monthly" : current === "monthly" ? null : current))
+                  }
+                >
+                  <div
+                    className={`relative p-5 transition-all sm:p-6 ${
+                      expandedPlan === "monthly" || isMonthlyActive
+                        ? "bg-emerald-500/12 shadow-[inset_0_1px_0_rgba(16,185,129,0.4)]"
+                        : "hover:bg-emerald-500/8"
+                    }`}
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                          Plano Mensal
-                        </span>
-                        {isMonthlyActive && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                            <BadgeCheck className="h-3 w-3" />
-                            Ativo
-                          </span>
+                    {isMonthlyActive && (
+                      <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary/80" aria-hidden />
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 text-left"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                              Plano Mensal
+                            </span>
+                            {isMonthlyActive && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                                <BadgeCheck className="h-3 w-3" />
+                                Ativo
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 text-lg font-semibold text-foreground">R$ 29,90/mês</p>
+                          <p className="text-xs text-muted-foreground">
+                            Controle seu negócio mês a mês com suporte prioritário.
+                          </p>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${
+                            expandedPlan === "monthly" ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-5 border-t border-emerald-400/20 pt-4 text-sm text-muted-foreground">
+                      <ul className="space-y-2">
+                        {[
+                          "Registro ilimitado de corridas e despesas",
+                          "Metas diárias e mensais em tempo real",
+                          "Sincronização na nuvem e suporte prioritário",
+                        ].map((feature) => (
+                          <li key={feature} className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          onClick={isMonthlyActive ? handleSubscriptionPortal : handleGoToPlans}
+                          className="sm:flex-1"
+                          variant={isMonthlyActive ? "outline" : "default"}
+                        >
+                          {isMonthlyActive ? "Gerenciar plano mensal" : "Assinar plano mensal"}
+                        </Button>
+                        {!isMonthlyActive && (
+                          <Button
+                            onClick={handleGoToPlans}
+                            variant="ghost"
+                            className="sm:w-auto"
+                            size="sm"
+                          >
+                            Ver benefícios completos
+                          </Button>
                         )}
                       </div>
-                      <p className="mt-1 text-lg font-semibold text-foreground">R$ 29,90/mês</p>
-                      <p className="text-xs text-muted-foreground">
-                        Controle seu negócio mês a mês com suporte prioritário.
-                      </p>
-                    </div>
-                    <ChevronDown
-                      className={`h-5 w-5 text-muted-foreground transition-transform ${
-                        expandedPlan === "monthly" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-4 text-sm text-muted-foreground">
-                  <ul className="space-y-2">
-                    {[
-                      "Registro ilimitado de corridas e despesas",
-                      "Metas diárias e mensais em tempo real",
-                      "Sincronização na nuvem e suporte prioritário",
-                    ].map((feature) => (
-                      <li key={feature} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      onClick={isMonthlyActive ? handleSubscriptionPortal : handleGoToPlans}
-                      className="sm:flex-1"
-                      variant={isMonthlyActive ? "outline" : "default"}
-                    >
-                      {isMonthlyActive ? "Gerenciar plano mensal" : "Assinar plano mensal"}
-                    </Button>
-                    {!isMonthlyActive && (
-                      <Button
-                        onClick={handleGoToPlans}
-                        variant="ghost"
-                        className="sm:w-auto"
-                        size="sm"
-                      >
-                        Ver benefícios completos
-                      </Button>
-                    )}
+                    </CollapsibleContent>
                   </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+                </Collapsible>
+              )}
 
-            <Collapsible
-              open={expandedPlan === "annual"}
-              onOpenChange={(open) =>
-                setExpandedPlan((current) => (open ? "annual" : current === "annual" ? null : current))
-              }
-            >
-              <Card
-                className={`border border-border/60 p-4 transition-all ${
-                  isAnnualActive ? "border-primary/60 bg-primary/5 shadow-lg shadow-primary/10" : "bg-card"
-                }`}
+              <Collapsible
+                open={expandedPlan === "annual"}
+                onOpenChange={(open) =>
+                  setExpandedPlan((current) => (open ? "annual" : current === "annual" ? null : current))
+                }
               >
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-3 text-left"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                          Plano Anual
-                        </span>
-                        {isAnnualActive && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                            <BadgeCheck className="h-3 w-3" />
-                            Ativo
-                          </span>
-                        )}
-                        {!isAnnualActive && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                            Economia 44%
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-lg font-semibold text-foreground">R$ 199,90/ano</p>
-                      <p className="text-xs text-muted-foreground">
-                        Equivalente a R$ 16,50 por mês com economia de 44%.
-                      </p>
-                    </div>
-                    <ChevronDown
-                      className={`h-5 w-5 text-muted-foreground transition-transform ${
-                        expandedPlan === "annual" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-4 space-y-4 text-sm text-muted-foreground">
-                  <ul className="space-y-2">
-                    {[
-                      "Todos os recursos do plano mensal inclusos",
-                      "12 meses pelo valor de 6,7 meses",
-                      "Prioridade máxima em novidades e suporte",
-                    ].map((feature) => (
-                      <li key={feature} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      onClick={isAnnualActive ? handleSubscriptionPortal : handleGoToPlans}
-                      className="sm:flex-1"
-                      variant={isAnnualActive ? "outline" : "default"}
+                <div
+                  className={`relative p-5 transition-all sm:p-6 ${
+                    expandedPlan === "annual" || isAnnualActive
+                      ? "bg-emerald-500/12 shadow-[inset_0_1px_0_rgba(16,185,129,0.4)]"
+                      : "hover:bg-emerald-500/8"
+                  }`}
+                >
+                  {isAnnualActive && (
+                    <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-primary/80" aria-hidden />
+                  )}
+                  {!isAnnualActive && (
+                    <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-emerald-400/60" aria-hidden />
+                  )}
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 text-left"
                     >
-                      {isAnnualActive ? "Gerenciar plano anual" : "Assinar plano anual"}
-                    </Button>
-                    {!isAnnualActive && (
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                            Plano Anual
+                          </span>
+                          {isAnnualActive ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              <BadgeCheck className="h-3 w-3" />
+                              Ativo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              Economia 44%
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-lg font-semibold text-foreground">R$ 199,90/ano</p>
+                        <p className="text-xs text-muted-foreground">
+                          Equivalente a R$ 16,50 por mês com economia de 44%.
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={`h-5 w-5 text-muted-foreground transition-transform ${
+                          expandedPlan === "annual" ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-5 border-t border-emerald-400/20 pt-4 text-sm text-muted-foreground">
+                    <ul className="space-y-2">
+                      {[
+                        "Todos os recursos do plano mensal inclusos",
+                        "12 meses pelo valor de 6,7 meses",
+                        "Prioridade máxima em novidades e suporte",
+                      ].map((feature) => (
+                        <li key={feature} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                       <Button
-                        onClick={handleGoToPlans}
-                        variant="ghost"
-                        className="sm:w-auto"
-                        size="sm"
+                        onClick={isAnnualActive ? handleSubscriptionPortal : handleGoToPlans}
+                        className="sm:flex-1"
+                        variant={isAnnualActive ? "outline" : "default"}
                       >
-                        Comparar com outros planos
+                        {isAnnualActive ? "Gerenciar plano anual" : "Assinar plano anual"}
                       </Button>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+                      {!isAnnualActive && (
+                        <Button
+                          onClick={handleGoToPlans}
+                          variant="ghost"
+                          className="sm:w-auto"
+                          size="sm"
+                        >
+                          Comparar com outros planos
+                        </Button>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            </div>
           </div>
         </div>
 
