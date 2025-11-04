@@ -47,7 +47,7 @@ import {
   type WorkSession,
   type Transaction,
 } from "@/lib/supabase-storage";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from "recharts";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -630,34 +630,77 @@ const Home = () => {
           }
         />
 
-        <Card className="p-5 glass-card">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
+        <Card className="p-5 glass-card overflow-hidden">
+          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 shadow-sm">
               <TrendingUp size={18} className="text-primary" />
             </div>
             Lucro dos últimos 7 dias
           </h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={weeklyChartData}>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart 
+              data={weeklyChartData}
+              margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+            >
+              <defs>
+                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.7} />
+                </linearGradient>
+                <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.7} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="hsl(var(--border))" 
+                opacity={0.2}
+                vertical={false}
+              />
               <XAxis
                 dataKey="day"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                tick={{ fill: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500 }}
                 axisLine={false}
+                tickLine={false}
               />
               <YAxis
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => `R$ ${value}`}
               />
-              <Bar dataKey="lucro" radius={[12, 12, 0, 0]} maxBarSize={50}>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const value = payload[0].value as number;
+                    return (
+                      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {payload[0].payload.day}
+                        </p>
+                        <p className={`text-sm font-bold ${value >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                          R$ {value.toFixed(2).replace(".", ",")}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+                cursor={{ fill: "hsl(var(--muted))", opacity: 0.1 }}
+              />
+              <Bar 
+                dataKey="lucro" 
+                radius={[8, 8, 0, 0]} 
+                maxBarSize={45}
+                animationDuration={800}
+                animationEasing="ease-out"
+              >
                 {weeklyChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={
-                      entry.lucro >= 0
-                        ? "hsl(var(--primary))"
-                        : "hsl(var(--destructive))"
-                    }
-                    opacity={0.9}
+                    fill={entry.lucro >= 0 ? "url(#profitGradient)" : "url(#lossGradient)"}
+                    className="drop-shadow-sm"
                   />
                 ))}
               </Bar>
