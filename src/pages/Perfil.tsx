@@ -407,7 +407,51 @@ const Perfil = () => {
           </div>
         </Card>
 
-        {/* Subscription overview */}
+        {/* Ações rápidas */}
+        <div className="animate-fade-in overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
+          <div className="divide-y divide-emerald-400/15">
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
+            >
+              <span className="flex items-start gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+                  <MessageCircle className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">Suporte via WhatsApp</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Fale com nosso time em horário comercial.
+                  </span>
+                </span>
+              </span>
+              <span className="text-xs font-medium uppercase tracking-wide text-emerald-200/80">Abrir</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleProductNews}
+              className="group flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
+            >
+              <span className="flex items-start gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200 transition-colors group-hover:bg-primary/15 group-hover:text-primary">
+                  <Megaphone className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">Novidades do produto</span>
+                  <span className="mt-1 block text-xs text-muted-foreground transition-colors group-hover:text-primary">
+                    Clique aqui e saiba o que vem aí
+                  </span>
+                </span>
+              </span>
+              <span className="text-xs font-medium text-emerald-200/80 transition-colors group-hover:text-primary">
+                ✨
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Assinatura e planos */}
         <div className="space-y-4 animate-fade-in">
           <Card className="relative overflow-hidden border border-emerald-400/40 bg-gradient-to-br from-emerald-500/12 via-emerald-600/10 to-emerald-700/5 p-5 shadow-[0_18px_50px_-28px_rgba(16,185,129,0.65)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(34,197,94,0.3),transparent_60%),radial-gradient(circle_at_90%_10%,rgba(16,185,129,0.24),transparent_55%)]" />
@@ -700,50 +744,6 @@ const Perfil = () => {
                 </div>
               </Collapsible>
             </div>
-          </div>
-        </div>
-
-        {/* Options */}
-        <div className="animate-fade-in overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
-          <div className="divide-y divide-emerald-400/15">
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
-            >
-              <span className="flex items-start gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
-                  <MessageCircle className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-foreground">Suporte via WhatsApp</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Fale com nosso time em horário comercial.
-                  </span>
-                </span>
-              </span>
-              <span className="text-xs font-medium uppercase tracking-wide text-emerald-200/80">Abrir</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleProductNews}
-              className="group flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
-            >
-              <span className="flex items-start gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200 transition-colors group-hover:bg-primary/15 group-hover:text-primary">
-                  <Megaphone className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-foreground">Novidades do produto</span>
-                  <span className="mt-1 block text-xs text-muted-foreground transition-colors group-hover:text-primary">
-                    Clique aqui e saiba o que vem aí
-                  </span>
-                </span>
-              </span>
-              <span className="text-xs font-medium text-emerald-200/80 transition-colors group-hover:text-primary">
-                ✨
-              </span>
-            </button>
           </div>
         </div>
       </main>
