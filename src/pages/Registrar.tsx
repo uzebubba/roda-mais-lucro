@@ -11,10 +11,12 @@ import {
   ArrowLeft,
   Fuel,
   Gauge,
-  CircleDollarSign,
   Loader2,
   Mic,
   MicOff,
+  Save,
+  CircleDollarSign,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -530,324 +532,375 @@ const Registrar = () => {
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
-        <Card className="p-5 space-y-5 glass-card animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground uppercase tracking-wide">
-                Combustível
-              </p>
-              <h2 className="text-lg font-semibold">Registro de Abastecimento</h2>
-            </div>
-            <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-              {mode === "automatic" ? "Modo automático" : "Modo manual"}
-            </span>
-          </div>
-
-          <Tabs
-            value={mode}
-            onValueChange={(value) => setMode(value as "automatic" | "manual")}
-          >
-            <TabsList className="grid w-full grid-cols-2 h-10 bg-secondary/50 backdrop-blur-sm">
-              <TabsTrigger
-                value="automatic"
-                className="text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300"
-              >
-                Automático
-              </TabsTrigger>
-              <TabsTrigger
-                value="manual"
-                className="text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all duration-300"
-              >
-                Manual
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="grid gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="pricePerLiter">Preço por litro (R$)</Label>
-              <Input
-                id="pricePerLiter"
-                type="text"
-                inputMode="decimal"
-                pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
-                placeholder="0,00"
-                autoComplete="off"
-                value={pricePerLiter}
-                onChange={handlePricePerLiterChange}
-                onBlur={handlePricePerLiterBlur}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="totalCost">Valor total (R$)</Label>
-              <Input
-                id="totalCost"
-                type="text"
-                inputMode="decimal"
-                pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
-                placeholder="0,00"
-                autoComplete="off"
-                value={totalCost}
-                onChange={handleTotalCostChange}
-                onBlur={handleTotalCostBlur}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="liters">
-                {mode === "automatic"
-                  ? "Litros calculados"
-                  : "Litros abastecidos (L)"}
-              </Label>
-              <Input
-                id="liters"
-                type="text"
-                placeholder="0,000"
-                value={
-                  mode === "automatic"
-                    ? derived.litersFromAuto > 0
-                      ? formatNumber(derived.litersFromAuto)
-                      : ""
-                    : manualLiters
-                }
-                onChange={handleManualLitersChange}
-                readOnly={mode === "automatic"}
-                inputMode="decimal"
-                pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
-                className={mode === "automatic" ? "bg-muted/40" : ""}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="kmCurrent">
-                KM atual do veículo{" "}
-                <span className="text-xs text-muted-foreground">
-                  • Último registro:{" "}
-                  {lastEntry ? formatNumber(lastEntry.kmCurrent, 0) : "--"} km
-                </span>
-              </Label>
-              <Input
-                id="kmCurrent"
-                type="number"
-                step="1"
-                placeholder="0"
-                value={kmCurrent}
-                onChange={(event) => setKmCurrent(event.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
-              <p className="text-xs text-muted-foreground">KM rodados</p>
-              <p className="text-lg font-semibold text-foreground">
-                {derived.kmSinceLast > 0
-                  ? formatNumber(derived.kmSinceLast, 0)
-                  : "--"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Último:{" "}
-                {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
-              <p className="text-xs text-muted-foreground">Consumo (km/L)</p>
-              <p className="text-lg font-semibold text-foreground">
-                {derived.consumption > 0
-                  ? formatNumber(derived.consumption)
-                  : "--"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Média histórica:{" "}
-                {stats.averageConsumption > 0
-                  ? formatNumber(stats.averageConsumption)
-                  : "--"}{" "}
-                km/L
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-gradient-to-br from-secondary/30 to-secondary/10 p-3 space-y-1 hover:border-primary/30 transition-all duration-300">
-              <p className="text-xs text-muted-foreground">Custo por km</p>
-              <p className="text-lg font-semibold text-foreground">
-                {derived.costPerKm > 0
-                  ? formatCurrency(derived.costPerKm)
-                  : "--"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Média histórica:{" "}
-                {stats.averageCostPerKm > 0
-                  ? formatCurrency(stats.averageCostPerKm)
-                  : "--"}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={handleSaveFuel}
-            size="lg"
-            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow flex items-center justify-center gap-3"
-            disabled={addFuelEntryMutation.isPending}
-          >
-            {addFuelEntryMutation.isPending ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                {micSupported && (
-                  <Button
-                    type="button"
-                    variant={speech.listening ? "destructive" : "secondary"}
-                    size="sm"
-                    className={`flex items-center gap-2 border-white/30 ${
-                      speech.listening
-                        ? "bg-destructive hover:bg-destructive/90 text-white"
-                        : "bg-white/20 hover:bg-white/30 text-white"
-                    }`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (speech.listening) {
-                        speech.stop();
-                      } else {
-                        speech.start();
-                      }
-                    }}
-                  >
-                    {speech.listening ? <MicOff size={16} /> : <Mic size={16} />}
-                    {speech.listening ? "Parar" : "Falar"}
-                  </Button>
-                )}
-                <span>Salvar abastecimento</span>
-              </>
-            )}
-          </Button>
-          {micSupported && lastHeard && (
-            <p className="text-[11px] text-muted-foreground text-right">
-              Último comando: "{lastHeard}"
-            </p>
-          )}
-        </Card>
-
-        <Card className="p-5 space-y-5 glass-card animate-fade-in">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground uppercase tracking-wide">
-                Quilometragem
-              </p>
-              <h2 className="text-lg font-semibold">Controle de KM Rodado</h2>
-            </div>
-            <Fuel size={20} className="text-primary" />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="kmUpdate">
-              KM atual{" "}
-              <span className="text-xs text-muted-foreground">
-                • Último registro:{" "}
-                {lastEntry ? formatNumber(lastEntry.kmCurrent, 0) : "--"} km
-              </span>
-            </Label>
-            <Input
-              id="kmUpdate"
-              type="number"
-              step="1"
-              placeholder="0"
-              value={kmUpdate}
-              onChange={(event) => setKmUpdate(event.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
-                <Gauge size={16} />
-                <span>Resumo do último abastecimento</span>
+        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/90 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(34,197,94,0.18),transparent_60%),radial-gradient(circle_at_100%_100%,rgba(16,185,129,0.14),transparent_65%)]"
+            aria-hidden
+          />
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+                  Combustível
+                </p>
+                <h2 className="mt-1 text-lg font-semibold leading-tight text-foreground">
+                  Registro de Abastecimento
+                </h2>
               </div>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <span className="text-muted-foreground">KM rodados:</span>{" "}
-                  {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
+              <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                {mode === "automatic" ? "Modo automático" : "Modo manual"}
+              </span>
+            </div>
+
+            <Tabs
+              value={mode}
+              onValueChange={(value) => setMode(value as "automatic" | "manual")}
+            >
+              <TabsList className="grid w-full grid-cols-2 rounded-full border border-primary/20 bg-background/60 p-1 text-sm backdrop-blur">
+                <TabsTrigger
+                  value="automatic"
+                  className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
+                >
+                  Automático
+                </TabsTrigger>
+                <TabsTrigger
+                  value="manual"
+                  className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
+                >
+                  Manual
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="pricePerLiter"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Preço por litro (R$)
+                </Label>
+                <Input
+                  id="pricePerLiter"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
+                  placeholder="0,00"
+                  autoComplete="off"
+                  value={pricePerLiter}
+                  onChange={handlePricePerLiterChange}
+                  onBlur={handlePricePerLiterBlur}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="totalCost"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Valor total (R$)
+                </Label>
+                <Input
+                  id="totalCost"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
+                  placeholder="0,00"
+                  autoComplete="off"
+                  value={totalCost}
+                  onChange={handleTotalCostChange}
+                  onBlur={handleTotalCostBlur}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="liters"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  {mode === "automatic"
+                    ? "Litros calculados"
+                    : "Litros abastecidos (L)"}
+                </Label>
+                <Input
+                  id="liters"
+                  type="text"
+                  placeholder="0,000"
+                  value={
+                    mode === "automatic"
+                      ? derived.litersFromAuto > 0
+                        ? formatNumber(derived.litersFromAuto)
+                        : ""
+                      : manualLiters
+                  }
+                  onChange={handleManualLitersChange}
+                  readOnly={mode === "automatic"}
+                  inputMode="decimal"
+                  pattern="^\\d+(?:[\\.,]\\d{0,3})?$"
+                  className={mode === "automatic" ? "bg-muted/40" : ""}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="kmCurrent"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  KM atual do veículo
+                  <span className="mt-0.5 block text-[11px] font-normal normal-case tracking-normal text-muted-foreground/80">
+                    Último registro:{" "}
+                    {lastEntry ? formatNumber(lastEntry.kmCurrent, 0) : "--"} km
+                  </span>
+                </Label>
+                <Input
+                  id="kmCurrent"
+                  type="number"
+                  step="1"
+                  placeholder="0"
+                  value={kmCurrent}
+                  onChange={(event) => setKmCurrent(event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] transition-colors duration-300 hover:border-emerald-400/40">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  KM rodados
                 </p>
-                <p>
-                  <span className="text-muted-foreground">Consumo médio:</span>{" "}
-                  {lastEntry && lastEntry.consumption > 0
-                    ? formatNumber(lastEntry.consumption)
-                    : "--"}{" "}
-                  km/L
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Custo por km:</span>{" "}
-                  {lastEntry && lastEntry.costPerKm > 0
-                    ? formatCurrency(lastEntry.costPerKm)
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {derived.kmSinceLast > 0
+                    ? formatNumber(derived.kmSinceLast, 0)
                     : "--"}
                 </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
-                <CircleDollarSign size={16} />
-                <span>Projeção atual</span>
-              </div>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <span className="text-muted-foreground">
-                    KM desde último abastecimento:
-                  </span>{" "}
-                  {kmFromUpdate.distance > 0
-                    ? formatNumber(kmFromUpdate.distance, 0)
-                    : "--"}{" "}
-                  km
+                <p className="text-[11px] text-muted-foreground">
+                  Último:{" "}
+                  {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
                 </p>
-                <p>
-                  <span className="text-muted-foreground">
-                    Consumo médio da frota:
-                  </span>{" "}
+              </div>
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] transition-colors duration-300 hover:border-emerald-400/40">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  Consumo (km/L)
+                </p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {derived.consumption > 0
+                    ? formatNumber(derived.consumption)
+                    : "--"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Média histórica:{" "}
                   {stats.averageConsumption > 0
                     ? formatNumber(stats.averageConsumption)
                     : "--"}{" "}
                   km/L
                 </p>
-                <p>
-                  <span className="text-muted-foreground">Gasto estimado:</span>{" "}
-                  {kmFromUpdate.distance > 0 && kmFromUpdate.estimatedCost > 0
-                    ? formatCurrency(kmFromUpdate.estimatedCost)
+              </div>
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] transition-colors duration-300 hover:border-emerald-400/40">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  Custo por km
+                </p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {derived.costPerKm > 0
+                    ? formatCurrency(derived.costPerKm)
+                    : "--"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Média histórica:{" "}
+                  {stats.averageCostPerKm > 0
+                    ? formatCurrency(stats.averageCostPerKm)
                     : "--"}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-xl border border-dashed border-border/60 bg-secondary/10 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-2">Resumo do dia</p>
-            {entries.length === 0 ? (
-              <p>Nenhum abastecimento registrado ainda.</p>
-            ) : (
-              <ul className="space-y-1">
-                <li>• Litros: {formatNumber(entries[0].liters)}</li>
-                <li>
-                  • KM: {formatNumber(entries[0].kmCurrent, 0)} km
-                </li>
-                <li>• Gasto: {formatCurrency(entries[0].totalCost)}</li>
-              </ul>
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              {micSupported && (
+                <Button
+                  type="button"
+                  variant={speech.listening ? "destructive" : "secondary"}
+                  size="sm"
+                  className={`flex w-full items-center justify-center gap-2 border border-white/20 sm:w-auto ${
+                    speech.listening
+                      ? "bg-destructive hover:bg-destructive/90 text-white"
+                      : "bg-white/15 hover:bg-white/25 text-white"
+                  }`}
+                  onClick={() => {
+                    if (speech.listening) {
+                      speech.stop();
+                    } else {
+                      speech.start();
+                    }
+                  }}
+                >
+                  {speech.listening ? <MicOff size={16} /> : <Mic size={16} />}
+                  {speech.listening ? "Parar captura" : "Falar"}
+                </Button>
+              )}
+              <Button
+                onClick={handleSaveFuel}
+                size="lg"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow sm:flex-1"
+                disabled={addFuelEntryMutation.isPending}
+              >
+                {addFuelEntryMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    <span>Salvar abastecimento</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            {micSupported && lastHeard && (
+              <p className="text-[11px] text-muted-foreground text-right">
+                Último comando: "{lastHeard}"
+              </p>
             )}
           </div>
+        </Card>
 
-          <Button
-            onClick={handleUpdateKm}
-            variant="secondary"
-            className="w-full h-12 text-base font-semibold"
-            disabled={setVehicleKmMutation.isPending}
-          >
-            {setVehicleKmMutation.isPending ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Atualizando...
-              </>
-            ) : (
-              "Atualizar KM"
-            )}
-          </Button>
+        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(34,197,94,0.22),transparent_58%),radial-gradient(circle_at_88%_92%,rgba(16,185,129,0.16),transparent_65%)]"
+            aria-hidden
+          />
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+                  Quilometragem
+                </p>
+                <h2 className="mt-1 text-lg font-semibold leading-tight text-foreground">
+                  Controle de KM Rodado
+                </h2>
+              </div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-[0_10px_30px_-20px_rgba(16,185,129,0.8)]">
+                <Fuel size={20} />
+              </span>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label
+                htmlFor="kmUpdate"
+                className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                KM atual
+                <span className="ml-2 text-[11px] font-normal text-muted-foreground/80">
+                  Último registro:{" "}
+                  {lastEntry ? formatNumber(lastEntry.kmCurrent, 0) : "--"} km
+                </span>
+              </Label>
+              <Input
+                id="kmUpdate"
+                type="number"
+                step="1"
+                placeholder="0"
+                value={kmUpdate}
+                onChange={(event) => setKmUpdate(event.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  <Gauge size={16} />
+                  <span>Resumo do último abastecimento</span>
+                </div>
+                <div className="mt-3 space-y-1.5 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">KM rodados:</span>{" "}
+                    {lastEntry ? formatNumber(lastEntry.kmSinceLast, 0) : "--"} km
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Consumo médio:</span>{" "}
+                    {lastEntry && lastEntry.consumption > 0
+                      ? formatNumber(lastEntry.consumption)
+                      : "--"}{" "}
+                    km/L
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Custo por km:</span>{" "}
+                    {lastEntry && lastEntry.costPerKm > 0
+                      ? formatCurrency(lastEntry.costPerKm)
+                      : "--"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  <CircleDollarSign size={16} />
+                  <span>Projeção atual</span>
+                </div>
+                <div className="mt-3 space-y-1.5 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">
+                      KM desde último abastecimento:
+                    </span>{" "}
+                    {kmFromUpdate.distance > 0
+                      ? formatNumber(kmFromUpdate.distance, 0)
+                      : "--"}{" "}
+                    km
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">
+                      Consumo médio da frota:
+                    </span>{" "}
+                    {stats.averageConsumption > 0
+                      ? formatNumber(stats.averageConsumption)
+                      : "--"}{" "}
+                    km/L
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Gasto estimado:</span>{" "}
+                    {kmFromUpdate.distance > 0 && kmFromUpdate.estimatedCost > 0
+                      ? formatCurrency(kmFromUpdate.estimatedCost)
+                      : "--"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-emerald-400/30 bg-emerald-500/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Resumo do dia
+              </p>
+              {entries.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground/80">
+                  Nenhum abastecimento registrado ainda.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-1.5 text-sm text-foreground/90">
+                  <li>• Litros: {formatNumber(entries[0].liters)}</li>
+                  <li>• KM: {formatNumber(entries[0].kmCurrent, 0)} km</li>
+                  <li>• Gasto: {formatCurrency(entries[0].totalCost)}</li>
+                </ul>
+              )}
+            </div>
+
+            <Button
+              onClick={handleUpdateKm}
+              variant="secondary"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-3 text-base font-semibold text-primary hover:bg-primary/15"
+              disabled={setVehicleKmMutation.isPending}
+            >
+              {setVehicleKmMutation.isPending ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Atualizando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={18} />
+                  <span>Atualizar KM</span>
+                </>
+              )}
+            </Button>
+          </div>
         </Card>
       </main>
     </div>

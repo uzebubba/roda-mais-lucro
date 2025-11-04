@@ -6,6 +6,7 @@ import {
   Droplet,
   Loader2,
   Trash2,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -216,7 +217,7 @@ const Fixas = () => {
         name,
         amount: parsedAmount,
         dueDay: parsedDay,
-        paid: false,
+        paid: true,
       });
       await queryClient.invalidateQueries({ queryKey: ["fixedExpenses"] });
       toast.success("Despesa fixa adicionada!");
@@ -418,165 +419,243 @@ const Fixas = () => {
 
       <main className="p-4 max-w-md mx-auto space-y-6">
         {/* Oil reminder */}
-        <Card className="p-5 space-y-5 glass-card animate-fade-in">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Droplet size={20} className="text-primary" />
+        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/80 to-background/95 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_10%,rgba(34,197,94,0.22),transparent_60%),radial-gradient(circle_at_90%_85%,rgba(16,185,129,0.18),transparent_68%)]"
+            aria-hidden
+          />
+          <div className="relative z-10 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-[0_12px_32px_-28px_rgba(16,185,129,0.75)]">
+                  <Droplet size={20} />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+                    Manutenção
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold leading-tight text-foreground">
+                    Troca de Óleo
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Controle o intervalo de troca do óleo do veículo.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Troca de Óleo
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Controle o intervalo de troca do óleo do veículo.
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-2 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                onClick={handleRegisterOilChange}
+                disabled={registerOilChangeMutation.isPending}
+              >
+                {registerOilChangeMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Droplet size={16} />
+                )}
+                Registrar troca
+              </Button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  Última troca
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {formatDate(oilSettings.lastChangeDate)}
+                </p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {oilSettings.lastChangeKm
+                    ? `${formatKm(oilSettings.lastChangeKm)} km`
+                    : "--"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  Próxima troca estimada
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Intervalo atual: {formatKm(oilSettings.intervalKm)} km
+                </p>
+                <p className="mt-1 text-xl font-semibold text-foreground">
+                  {formatKm(nextChangeKm)} km
                 </p>
               </div>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-2"
-              onClick={handleRegisterOilChange}
-              disabled={registerOilChangeMutation.isPending}
-            >
-              {registerOilChangeMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Droplet size={16} />
-              )}
-              Registrar troca
-            </Button>
-          </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span>Última troca</span>
-              <span className="font-medium">
-                {oilSettings.lastChangeKm
-                  ? `${formatKm(oilSettings.lastChangeKm)} km`
-                  : "--"}{" "}
-                • {formatDate(oilSettings.lastChangeDate)}
-              </span>
+            <div className="space-y-2 rounded-2xl border border-emerald-400/25 bg-emerald-500/5 p-4">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <span>Progresso</span>
+                <span>{Math.round(progressPercent)}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-2 bg-background/40" />
+              <div className="text-sm">
+                <span
+                  className={
+                    overdue
+                      ? "text-destructive font-semibold"
+                      : "text-emerald-200/90 font-semibold"
+                  }
+                >
+                  {overdue
+                    ? `Troca atrasada em ${formatKm(Math.abs(kmRemaining))} km`
+                    : `Faltam ${formatKm(kmRemaining)} km`}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Você rodou {formatKm(kmSinceLast)} km desde a última troca.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Próxima troca</span>
-              <span className="font-bold">
-                {formatKm(nextChangeKm)} km
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-            <div className="text-sm">
-              <span
-                className={
-                  overdue ? "text-destructive font-semibold" : "text-muted-foreground"
-                }
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="intervalKm"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Intervalo (km)
+                </Label>
+                <Input
+                  id="intervalKm"
+                  type="number"
+                  min="500"
+                  step="100"
+                  value={intervalInput}
+                  onChange={(event) => setIntervalInput(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="lastChangeKm"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Última troca (km)
+                </Label>
+                <Input
+                  id="lastChangeKm"
+                  type="number"
+                  min="0"
+                  value={lastChangeInput}
+                  onChange={(event) => setLastChangeInput(event.target.value)}
+                />
+              </div>
+              <Button
+                className="sm:col-span-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow"
+                onClick={handleSaveOilSettings}
+                disabled={updateOilSettingsMutation.isPending}
               >
-                {overdue
-                  ? `Troca atrasada em ${formatKm(Math.abs(kmRemaining))} km`
-                  : `Faltam ${formatKm(kmRemaining)} km`}
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Você rodou {formatKm(kmSinceLast)} km desde a última troca.
-              </p>
+                {updateOilSettingsMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Calendar size={18} />
+                    Salvar configurações
+                  </>
+                )}
+              </Button>
             </div>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="intervalKm">Intervalo (km)</Label>
-              <Input
-                id="intervalKm"
-                type="number"
-                min="500"
-                step="100"
-                value={intervalInput}
-                onChange={(event) => setIntervalInput(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="lastChangeKm">Última troca (km)</Label>
-              <Input
-                id="lastChangeKm"
-                type="number"
-                min="0"
-                value={lastChangeInput}
-                onChange={(event) => setLastChangeInput(event.target.value)}
-              />
-            </div>
-            <Button
-              className="w-full gap-2"
-              onClick={handleSaveOilSettings}
-              disabled={updateOilSettingsMutation.isPending}
-            >
-              {updateOilSettingsMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Calendar size={16} />
-                  Salvar configurações
-                </>
-              )}
-            </Button>
           </div>
         </Card>
 
         {/* Fixed expenses */}
-        <Card className="p-5 space-y-4 glass-card animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
-              Despesas Fixas
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              {expenses.length} registro{expenses.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="space-y-3">
-            {expenses.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma despesa fixa cadastrada.
-              </p>
-            ) : (
-              expenses.map((expense: FixedExpense) => (
-                <div
-                  key={expense.id}
-                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-4 py-3 gap-3"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{expense.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>R$ {formatAmount(expense.amount)}</span>
-                      <span>•</span>
-                      <span>Vence dia {expense.dueDay}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={expense.paid}
-                      onCheckedChange={() => handleToggle(expense.id)}
-                      disabled={toggleExpenseMutation.isPending}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive/80"
-                      onClick={() => handleDeleteExpense(expense.id, expense.name)}
-                      disabled={deleteExpenseMutation.isPending}
-                    >
-                      {deleteExpenseMutation.isPending &&
-                      deleteExpenseMutation.variables === expense.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-b from-background/92 via-background/82 to-background/96 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_5%,rgba(34,197,94,0.18),transparent_60%),radial-gradient(circle_at_92%_95%,rgba(16,185,129,0.16),transparent_65%)]"
+            aria-hidden
+          />
+          <div className="relative z-10 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-[0_12px_32px_-28px_rgba(16,185,129,0.75)]">
+                  <Wallet size={20} />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+                    Planejamento
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold leading-tight text-foreground">
+                    Despesas Fixas
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Visualize e controle os custos recorrentes do seu negócio.
+                  </p>
                 </div>
-              ))
-            )}
+              </div>
+              <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                {expenses.length} registro{expenses.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {expenses.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 p-4 text-sm text-muted-foreground">
+                  Cadastre suas despesas fixas para acompanhar vencimentos e manter o fluxo em dia.
+                </div>
+              ) : (
+                expenses.map((expense: FixedExpense) => {
+                  const isPaid = expense.paid;
+                  return (
+                    <div
+                      key={expense.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)] transition-colors duration-200 hover:border-emerald-400/40 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="text-sm font-semibold text-foreground capitalize">
+                            {expense.name}
+                          </p>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              isPaid
+                                ? "bg-emerald-500/15 text-emerald-200"
+                                : "bg-muted/50 text-muted-foreground"
+                            }`}
+                          >
+                            {isPaid ? "Ativa" : "Pausada"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            R$ {formatAmount(expense.amount)}
+                          </span>
+                          <span className="text-muted-foreground/60">•</span>
+                          <span>Vence dia {expense.dueDay}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-3">
+                        <Switch
+                          checked={isPaid}
+                          onCheckedChange={() => handleToggle(expense.id)}
+                          disabled={toggleExpenseMutation.isPending}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive/80"
+                          onClick={() => handleDeleteExpense(expense.id, expense.name)}
+                          disabled={deleteExpenseMutation.isPending}
+                          aria-label={`Remover ${expense.name}`}
+                        >
+                          {deleteExpenseMutation.isPending &&
+                          deleteExpenseMutation.variables === expense.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </Card>
       </main>

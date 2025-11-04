@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Download,
   MessageCircle,
   Save,
   Megaphone,
@@ -63,7 +62,7 @@ const Perfil = () => {
   const [email, setEmail] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isProductNewsOpen, setIsProductNewsOpen] = useState(false);
-  const [subscriptionAction, setSubscriptionAction] = useState<"portal" | null>(null);
+  const [subscriptionAction, setSubscriptionAction] = useState<"portal" | "cancel-trial" | null>(null);
   const [expandedPlan, setExpandedPlan] = useState<"monthly" | "annual" | null>(null);
 
   const profile = profileQuery.data;
@@ -96,6 +95,8 @@ const Perfil = () => {
 
   const isTrialWindow =
     subscribed && typeof trialDaysLeft === "number" && trialDaysLeft > 0 && trialDaysLeft <= 7;
+
+  const trialCountdown = trialDaysLeft ?? 0;
 
   const isMonthlyActive = subscribed && activePriceId === SUBSCRIPTION_TIERS.MENSAL.price_id;
   const isAnnualActive = subscribed && activePriceId === SUBSCRIPTION_TIERS.ANUAL.price_id;
@@ -174,8 +175,8 @@ const Perfil = () => {
     return "JM";
   }, [profile?.avatarInitials, fullName]);
 
-  const handleSubscriptionPortal = async () => {
-    setSubscriptionAction("portal");
+  const openSubscriptionPortal = async (action: "portal" | "cancel-trial") => {
+    setSubscriptionAction(action);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
@@ -207,6 +208,14 @@ const Perfil = () => {
     }
   };
 
+  const handleSubscriptionPortal = () => {
+    void openSubscriptionPortal("portal");
+  };
+
+  const handleCancelTrial = () => {
+    void openSubscriptionPortal("cancel-trial");
+  };
+
   const handleGoToPlans = () => {
     navigate("/assinatura");
   };
@@ -214,10 +223,6 @@ const Perfil = () => {
   const handleWhatsApp = () => {
     const supportUrl = "https://wa.me/message/QURUXGZK3FPPE1";
     window.open(supportUrl, "_blank", "noopener,noreferrer");
-  };
-
-  const handleExport = () => {
-    alert("Funcionalidade de exportar dados será implementada em breve!");
   };
 
   const handleProductNews = () => {
@@ -297,79 +302,109 @@ const Perfil = () => {
 
       <main className="p-4 max-w-md mx-auto space-y-4 animate-fade-in">
         {/* User Info */}
-        <Card className="p-6 glass-card animate-fade-in">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-center gap-4 sm:flex-1">
-              <Avatar className="h-16 w-16 border border-primary/30 shadow-[0_0_25px_-12px_rgba(34,197,94,0.7)]">
-                <AvatarFallback className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary-glow text-xl text-primary-foreground">
-                  <span className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_65%)]" />
-                  <span className="relative font-semibold tracking-wide uppercase">
-                    {avatarInitials}
-                  </span>
-                  <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-background/95 shadow-lg">
-                    <CarFront size={16} className="text-primary" />
-                  </span>
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {fullName || "Motorista Bubba"}
-                </h2>
-                <p className="text-sm text-muted-foreground">{displayedEmail}</p>
+        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/80 to-background/95 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,rgba(34,197,94,0.22),transparent_60%),radial-gradient(circle_at_88%_90%,rgba(16,185,129,0.16),transparent_65%)]"
+            aria-hidden
+          />
+          <div className="relative z-10 space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4 sm:flex-1">
+                <Avatar className="h-16 w-16 border border-primary/40 shadow-[0_0_30px_-18px_rgba(34,197,94,0.75)]">
+                  <AvatarFallback className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary-glow text-xl text-primary-foreground">
+                    <span className="absolute inset-0 rounded-full opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_65%)]" />
+                    <span className="relative font-semibold tracking-wide uppercase">
+                      {avatarInitials}
+                    </span>
+                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-background/95 shadow-lg">
+                      <CarFront size={16} className="text-primary" />
+                    </span>
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+                    Perfil
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-foreground">
+                    {fullName || "Motorista Bubba"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">{displayedEmail}</p>
+                </div>
               </div>
+              {!isEditing && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleStartEditing}
+                  className="gap-2 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                >
+                  Editar dados
+                </Button>
+              )}
             </div>
-            {!isEditing && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleStartEditing}
-                className="h-8 self-start text-sm font-medium text-primary hover:text-primary/80 sm:self-auto"
-              >
-                Editar dados
-              </Button>
+
+            {!isEditing && isTrialWindow && (
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-amber-200">
+                  Em teste ({trialCountdown} dia{trialCountdown === 1 ? "" : "s"})
+                </span>
+              </div>
+            )}
+
+            {isEditing && (
+              <div className="space-y-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/5 p-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label
+                      htmlFor="fullName"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      Seu nome
+                    </Label>
+                    <Input
+                      id="fullName"
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                      placeholder="Digite como quer ser chamado"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label
+                      htmlFor="email"
+                      className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      E-mail
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="seu@email.com"
+                    />
+                  </div>
+                </div>
+                <Button
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow"
+                  onClick={handleSaveProfile}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Salvar dados
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
-          {isEditing && (
-            <div className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Seu nome</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  placeholder="Digite como quer ser chamado"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-              <Button
-                className="w-full gap-2"
-                onClick={handleSaveProfile}
-                disabled={updateProfileMutation.isPending}
-              >
-                {updateProfileMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} />
-                    Salvar dados
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </Card>
 
         {/* Subscription overview */}
@@ -415,30 +450,59 @@ const Perfil = () => {
                   <>
                     <Button
                       onClick={handleSubscriptionPortal}
-                      disabled={subscriptionAction === "portal"}
-                      variant={isTrialWindow ? "destructive" : "outline"}
+                      disabled={subscriptionAction !== null}
+                      variant="outline"
                       className="w-full sm:w-48"
                     >
-                      {subscriptionAction === "portal"
+                      {subscriptionAction !== null
                         ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Abrindo portal...
                           </>
                         )
-                        : isTrialWindow
-                        ? "Cancelar teste agora"
                         : "Gerenciar assinatura"}
                     </Button>
-                    <Button
-                      onClick={() => void checkSubscription()}
-                      variant="ghost"
-                      size="sm"
-                      className="text-emerald-200 hover:text-emerald-100"
-                      disabled={subscriptionStatusLoading}
-                    >
-                      {subscriptionStatusLoading ? "Atualizando..." : "Atualizar status"}
-                    </Button>
+                    {isTrialWindow ? (
+                      <Button
+                        onClick={handleCancelTrial}
+                        variant="destructive"
+                        size="sm"
+                        className="w-full sm:w-48"
+                        disabled={subscriptionAction !== null}
+                      >
+                        {subscriptionAction === "cancel-trial"
+                          ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Cancelando...
+                            </>
+                          )
+                          : subscriptionAction === "portal"
+                          ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Abrindo portal...
+                            </>
+                          )
+                          : (
+                            <>
+                              <X className="mr-2 h-4 w-4" />
+                              Cancelar teste agora
+                            </>
+                          )}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => void checkSubscription()}
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-200 hover:text-emerald-100"
+                        disabled={subscriptionStatusLoading}
+                      >
+                        {subscriptionStatusLoading ? "Atualizando..." : "Atualizar status"}
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -640,45 +704,47 @@ const Perfil = () => {
         </div>
 
         {/* Options */}
-        <div className="space-y-3 animate-fade-in">
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={handleWhatsApp}
-          >
-            <span className="flex items-center gap-3">
-              <MessageCircle size={18} />
-              Suporte via WhatsApp
-            </span>
-            <span className="text-xs text-muted-foreground">Em horário comercial</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={handleExport}
-          >
-            <span className="flex items-center gap-3">
-              <Download size={18} />
-              Exportar dados
-            </span>
-            <span className="text-xs text-muted-foreground">CSV / Excel</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-between group"
-            onClick={handleProductNews}
-          >
-            <span className="flex items-center gap-3">
-              <Megaphone size={18} />
-              <span className="flex flex-col items-start">
-                <span>Novidades do produto</span>
-                <span className="text-xs text-muted-foreground transition-colors group-hover:text-primary">
-                  Clique aqui e saiba o que vem aí
+        <div className="animate-fade-in overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-950/40 via-background/95 to-background/85 shadow-[0_26px_60px_-36px_rgba(16,185,129,0.65)] backdrop-blur-sm">
+          <div className="divide-y divide-emerald-400/15">
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
+            >
+              <span className="flex items-start gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+                  <MessageCircle className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">Suporte via WhatsApp</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Fale com nosso time em horário comercial.
+                  </span>
                 </span>
               </span>
-            </span>
-            <span className="text-xs text-muted-foreground">✨</span>
-          </Button>
+              <span className="text-xs font-medium uppercase tracking-wide text-emerald-200/80">Abrir</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleProductNews}
+              className="group flex w-full items-center justify-between gap-4 p-5 text-left transition-all hover:bg-emerald-500/8 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:p-6"
+            >
+              <span className="flex items-start gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200 transition-colors group-hover:bg-primary/15 group-hover:text-primary">
+                  <Megaphone className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-foreground">Novidades do produto</span>
+                  <span className="mt-1 block text-xs text-muted-foreground transition-colors group-hover:text-primary">
+                    Clique aqui e saiba o que vem aí
+                  </span>
+                </span>
+              </span>
+              <span className="text-xs font-medium text-emerald-200/80 transition-colors group-hover:text-primary">
+                ✨
+              </span>
+            </button>
+          </div>
         </div>
       </main>
 
