@@ -162,6 +162,17 @@ const Assinatura = () => {
             Acesse a Bubba e tenha controle total das suas corridas. Gerencie lucro, custos e metas em tempo real.
           </p>
         </div>
+        <div className="relative max-w-3xl mx-auto overflow-hidden rounded-2xl border border-emerald-400/60 bg-emerald-500/5 px-6 py-4 shadow-[0_20px_60px_-25px_rgba(16,185,129,0.55)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(34,197,94,0.35),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.25),transparent_60%)]" />
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4">
+            <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+              Teste Premium de 7 dias grátis
+            </span>
+            <p className="text-center text-sm text-emerald-100 sm:text-left">
+              Experimente o Bubba completo por uma semana, com todos os recursos liberados. Cancele em até 7 dias e nada será cobrado.
+            </p>
+          </div>
+        </div>
 
         {subscribed && subscription_end && (
           <Card className="border-primary/50 bg-primary/5">
