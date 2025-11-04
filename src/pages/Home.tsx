@@ -64,7 +64,7 @@ const GREETING_MESSAGES = [
   "{greeting}, {name}! Bora bater a meta hoje?",
   "{greeting}, {name}! Vamos transformar cada corrida em lucro.",
   "{greeting}, {name}! Hora de acelerar rumo ao próximo recorde.",
-  "{greeting}, {name}! Energia lá em cima pra dominar o app!",
+  "{greeting}, {name}! Vamos fazer esse app trabalhar a favor do seu bolso!",
   "{greeting}, {name}! Vamos fazer esse dia valer cada quilômetro.",
   "{greeting}, {name}! Confio no seu talento — partiu lucrar?",
 ];
