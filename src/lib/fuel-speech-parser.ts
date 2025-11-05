@@ -56,15 +56,48 @@ const containsAny = (text: string, keywords: string[]) =>
 const PRICE_KEYWORDS = [
   "preco",
   "preço",
+  "preco do litro",
+  "preço do litro",
+  "preco por litro",
+  "preço por litro",
   "por litro",
   "o litro",
   "valor do litro",
   "litro sai",
   "litro saiu",
   "cada litro",
+  "saiu a",
+  "saiu por",
+  "sai a",
+  "sai por",
+  "custando",
+  "tava a",
+  "tava por",
+  "estava a",
+  "estava por",
+  "valor do combustivel",
+  "valor da gasolina",
+  "valor do etanol",
+  "valor do diesel",
+  "preco da gasolina",
+  "preço da gasolina",
+  "preco do combustivel",
+  "preço do combustível",
 ];
 
-const LITERS_KEYWORDS = ["litros", "l "];
+const LITERS_KEYWORDS = [
+  "litros",
+  "litros e",
+  "litros a",
+  "litros por",
+  "litros no total",
+  "litros de",
+  "de litros",
+  "litros cada",
+  "litros usados",
+  "quantos litros",
+  "litros abastecidos",
+];
 
 const TOTAL_KEYWORDS = [
   "total",
@@ -85,9 +118,52 @@ const TOTAL_KEYWORDS = [
   "complete o tanque",
   "tanquei",
   "tanque",
+  "ficou",
+  "ficou em",
+  "ficou por",
+  "deu",
+  "deu em",
+  "deu por",
+  "deu no total",
+  "saiu em",
+  "saiu",
+  "fechou",
+  "valor final",
+  "valor total",
+  "no total",
+  "totalizei",
+  "totalizou",
+  "totalizando",
+  "pago",
+  "pagos",
+  "pix",
+  "pixei",
+  "deposito",
+  "depósito",
+  "transferencia",
+  "transferência",
+  "combustivel",
+  "gasolina",
+  "etanol",
+  "diesel",
 ];
 
-const KM_KEYWORDS = ["km", "quilometro", "quilometros", "quilômetro", "quilômetros"];
+const KM_KEYWORDS = [
+  "km",
+  "quilometro",
+  "quilometros",
+  "quilômetro",
+  "quilômetros",
+  "quilometragem",
+  "km atual",
+  "km do carro",
+  "km no carro",
+  "km total",
+  "odometro",
+  "hodometro",
+  "hodômetro",
+  "odômetro",
+];
 
 const PRICE_MIN_VALUE = 0.5;
 const PRICE_REALISTIC_MAX = 15;
@@ -164,16 +240,31 @@ export const parseFuelSpeech = (input: string): ParsedFuelSpeech | null => {
       return;
     }
 
-    const hasSingularLitro =
-      /\blitro\b/.test(context) && !/\blitros\b/.test(context);
+    const beforeWindow = normalizeText(
+      text.slice(Math.max(0, entry.start - 8), entry.start),
+    );
+    const afterWindow = normalizeText(
+      text.slice(entry.end, Math.min(text.length, entry.end + 8)),
+    );
 
-    if (containsAny(context, PRICE_KEYWORDS) || hasSingularLitro) {
-      upsertCandidate("pricePerLiter", index, hasSingularLitro ? 4 : 3);
+    const hasSingularLitroNearby =
+      (/\blitro\b/.test(beforeWindow) && !/\blitros\b/.test(beforeWindow)) ||
+      (/\blitro\b/.test(afterWindow) && !/\blitros\b/.test(afterWindow));
+
+    const hasPriceKeyword = containsAny(context, PRICE_KEYWORDS);
+
+    if (hasSingularLitroNearby) {
+      upsertCandidate("pricePerLiter", index, 5);
       return;
     }
 
+    if (hasPriceKeyword) {
+      upsertCandidate("pricePerLiter", index, 2.5);
+      // não retorna para permitir que o número também seja avaliado como total
+    }
+
     if (containsAny(context, LITERS_KEYWORDS)) {
-      upsertCandidate("liters", index, 3);
+      upsertCandidate("liters", index, 2.2);
       return;
     }
 
@@ -199,7 +290,7 @@ export const parseFuelSpeech = (input: string): ParsedFuelSpeech | null => {
     }
 
     if (value > 0 && value <= 200) {
-      upsertCandidate("liters", index, 1);
+      upsertCandidate("liters", index, 0.5);
     }
   });
 

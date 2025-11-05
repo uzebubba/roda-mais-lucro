@@ -269,16 +269,27 @@ const Registrar = () => {
     let updated = false;
     let hadApplicableData = false;
 
+    let nextPriceCandidate = parseNumber(pricePerLiter);
+    let nextTotalCandidate = parseNumber(totalCost);
+
     if (parsed.totalCost !== undefined && parsed.totalCost > 0) {
       hadApplicableData = true;
       const formatted = formatDecimalNumber(parsed.totalCost, 2);
-      updated = updateIfChanged(setTotalCost, formatted) || updated;
+      const changed = updateIfChanged(setTotalCost, formatted);
+      if (changed) {
+        updated = true;
+      }
+      nextTotalCandidate = parsed.totalCost;
     }
 
     if (parsed.pricePerLiter !== undefined && parsed.pricePerLiter > 0) {
       hadApplicableData = true;
       const formatted = formatPricePerLiterNumber(parsed.pricePerLiter);
-      updated = updateIfChanged(setPricePerLiter, formatted) || updated;
+      const changed = updateIfChanged(setPricePerLiter, formatted);
+      if (changed) {
+        updated = true;
+      }
+      nextPriceCandidate = parsed.pricePerLiter;
     }
 
     if (mode === "manual" && parsed.liters !== undefined && parsed.liters > 0) {
@@ -294,7 +305,9 @@ const Registrar = () => {
         const kmString = kmValue.toString();
         const changedCurrent = updateIfChanged(setKmCurrent, kmString);
         const changedUpdate = updateIfChanged(setKmUpdate, kmString);
-        updated = changedCurrent || changedUpdate || updated;
+        if (changedCurrent || changedUpdate) {
+          updated = true;
+        }
       }
     }
 
@@ -305,19 +318,27 @@ const Registrar = () => {
     }
 
     if (updated || hadApplicableData) {
-      if (listening) {
-        stopSpeech();
-      }
       toast.success("Campos preenchidos por voz. Confira antes de salvar.", {
         id: VOICE_TOAST_ID,
       });
+
+      const hasPrice = parsed.pricePerLiter !== undefined
+        ? parsed.pricePerLiter > 0
+        : nextPriceCandidate > 0;
+      const hasTotal = parsed.totalCost !== undefined
+        ? parsed.totalCost > 0
+        : nextTotalCandidate > 0;
+
+      if (listening && hasPrice && hasTotal) {
+        stopSpeech();
+      }
     } else {
       toast.warning(
         "Não encontrei dados para preencher. Fale sobre o valor total, preço por litro, litros ou KM.",
         { id: VOICE_TOAST_ID },
       );
     }
-  }, [transcript, listening, mode, stopSpeech, isFinalTranscript]);
+  }, [transcript, listening, mode, stopSpeech, isFinalTranscript, pricePerLiter, totalCost]);
 
   useEffect(() => {
     if (!speechError) {
