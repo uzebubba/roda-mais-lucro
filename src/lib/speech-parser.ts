@@ -153,16 +153,16 @@ const extractAmount = (text: string): number | null => {
   let centsPart: number | null = null;
 
   if (idxReais >= 0) {
-    integerPart = parseCardinalWords(tokens.slice(0, idxReais));
+    integerPart = parseNumberFromTokens(tokens.slice(0, idxReais));
   }
   if (idxCentavos >= 0) {
     const start = idxReais >= 0 ? idxReais + 1 : 0;
-    centsPart = parseCardinalWords(tokens.slice(start, idxCentavos));
+    centsPart = parseNumberFromTokens(tokens.slice(start, idxCentavos));
   }
 
   if (integerPart === null && centsPart === null) {
     // tentar parsear o texto todo
-    integerPart = parseCardinalWords(tokens);
+    integerPart = parseNumberFromTokens(tokens);
   }
 
   if (integerPart === null && centsPart === null) return null;
@@ -175,7 +175,10 @@ const normalizeForMatch = (value: string): string =>
   value
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const PLATFORM_PATTERNS: Array<{ platform: string; regexes: RegExp[] }> = [
   {
@@ -220,7 +223,8 @@ const PLATFORM_PATTERNS: Array<{ platform: string; regexes: RegExp[] }> = [
 ];
 
 const detectPlatform = (text: string): string | undefined => {
-  const normalized = normalizeForMatch(text).replace(/[^a-z0-9\s]/g, " ");
+  const normalized = normalizeForMatch(text);
+  if (!normalized) return undefined;
   for (const matcher of PLATFORM_PATTERNS) {
     if (matcher.regexes.some((regex) => regex.test(normalized))) {
       return matcher.platform;
@@ -231,20 +235,319 @@ const detectPlatform = (text: string): string | undefined => {
 
 const includesAny = (haystack: string, needles: string[]) => {
   const normalizedHaystack = normalizeForMatch(haystack);
-  return needles.some((needle) =>
-    normalizedHaystack.includes(normalizeForMatch(needle)),
+  if (!normalizedHaystack) return false;
+  const haystackTokens = normalizedHaystack.split(" ").filter(Boolean);
+  return needles.some((needle) => {
+    const normalizedNeedle = normalizeForMatch(needle);
+    if (!normalizedNeedle) {
+      return false;
+    }
+    if (normalizedNeedle.includes(" ")) {
+      return normalizedHaystack.includes(normalizedNeedle);
+    }
+    return haystackTokens.includes(normalizedNeedle);
+  });
+};
+
+const isNumberToken = (token: string): boolean => {
+  if (!token) return false;
+  if (token === "e") return true;
+  if (isScale(token)) return true;
+  return (
+    PT_UNITS[token] !== undefined ||
+    PT_TEENS[token] !== undefined ||
+    PT_TENS[token] !== undefined ||
+    PT_HUNDREDS[token] !== undefined
   );
 };
+
+const splitNumberSequences = (tokens: string[]): string[][] => {
+  const sequences: string[][] = [];
+  let current: string[] = [];
+
+  const pushCurrent = () => {
+    if (current.length > 0) {
+      sequences.push(current);
+      current = [];
+    }
+  };
+
+  for (const token of tokens) {
+    if (isNumberToken(token)) {
+      current.push(token);
+      continue;
+    }
+    pushCurrent();
+  }
+
+  pushCurrent();
+  return sequences;
+};
+
+const parseNumberFromTokens = (tokens: string[]): number | null => {
+  const sequences = splitNumberSequences(tokens);
+  for (let index = sequences.length - 1; index >= 0; index -= 1) {
+    const candidate = parseCardinalWords(sequences[index]);
+    if (candidate !== null) {
+      return candidate;
+    }
+  }
+  return null;
+};
+
+const FUEL_KEYWORDS = [
+  "combustivel",
+  "combustível",
+  "gasolina",
+  "gasolina comum",
+  "gasolina aditivada",
+  "gasolina premium",
+  "gasosa",
+  "etanol",
+  "alcool",
+  "álcool",
+  "diesel",
+  "gnv",
+  "gas",
+  "gnv",
+  "posto",
+  "postinho",
+  "tanque",
+  "tanquinho",
+  "bomba",
+  "bombas",
+  "litro",
+  "litros",
+  "abasteci",
+  "abasteceu",
+  "abastecer",
+  "abastecendo",
+  "abastecimento",
+  "reabasteci",
+  "reabastecer",
+  "reabastecimento",
+  "coloquei gasolina",
+  "coloquei combustivel",
+  "coloquei combustível",
+  "coloquei etanol",
+  "coloquei diesel",
+  "coloquei gnv",
+  "coloquei no tanque",
+  "coloquei no posto",
+  "colocar gasolina",
+  "colocar combustivel",
+  "colocar combustível",
+  "colocando gasolina",
+  "colocando combustivel",
+  "encher o tanque",
+  "enchi o tanque",
+  "enche o tanque",
+  "enchemos o tanque",
+  "tanque cheio",
+  "tanque vazio",
+  "tanquei",
+  "tanquear",
+  "tanqueando",
+];
+
+const FOOD_KEYWORDS = [
+  "almoço",
+  "almoco",
+  "almocei",
+  "almocar",
+  "almoçar",
+  "janta",
+  "jantar",
+  "jantei",
+  "jantando",
+  "jantamos",
+  "lanche",
+  "lanchei",
+  "lanchinho",
+  "marmita",
+  "marmitex",
+  "comida",
+  "comidinha",
+  "comer",
+  "comi",
+  "refeicao",
+  "refeição",
+  "refeicoes",
+  "refeições",
+  "padaria",
+  "padoca",
+  "lanchonete",
+  "restaurante",
+  "restaurantes",
+  "cantina",
+  "boteco",
+  "bar",
+  "hamburguer",
+  "hambúrguer",
+  "hamburgueria",
+  "pizza",
+  "pastel",
+  "coxinha",
+  "sanduiche",
+  "sanduíche",
+  "sanduba",
+  "hotdog",
+  "hot dog",
+  "dogao",
+  "cachorro quente",
+  "bk",
+  "burger king",
+  "burgerking",
+  "mcdonalds",
+  "mc donalds",
+  "subway",
+  "habibs",
+  "bobs",
+  "cafe",
+  "café",
+  "cafezinho",
+  "cafe da manha",
+  "cafe da manhã",
+  "cafe da tarde",
+  "snack",
+  "refri",
+  "refrigerante",
+  "suco",
+  "bebida",
+];
+const TOLL_KEYWORDS = [
+  "pedagio",
+  "pedágios",
+  "pedagio",
+  "pedágios",
+  "pedágio",
+  "pedagios",
+  "pedágio da",
+  "pedágio do",
+  "pedágio na",
+  "pedágio no",
+  "praça de pedágio",
+  "praça do pedágio",
+  "passar no pedágio",
+  "passei no pedágio",
+  "paguei pedágio",
+  "paguei o pedágio",
+  "paguei no pedágio",
+  "pago pedágio",
+  "pagamos pedágio",
+  "pedagio ida",
+  "pedagio volta",
+  "cabine do pedágio",
+  "tarifa do pedágio",
+  "rodovia",
+  "praça de cobrança",
+  "cabine",
+  "cabine eletrônica",
+  "sem parar",
+  "semparar",
+  "concessionária",
+  "concessionaria",
+];
+const MAINTENANCE_KEYWORDS = [
+  "manutencao",
+  "manutenção",
+  "oficina",
+  "mecanico",
+  "mecânico",
+  "eletricista",
+  "eletrica",
+  "eletrica do carro",
+  "alinhamento",
+  "balanceamento",
+  "alinhamento e balanceamento",
+  "suspensao",
+  "suspensão",
+  "amortecedor",
+  "amortecedores",
+  "pastilha",
+  "pastilhas",
+  "pastilha de freio",
+  "pastilhas de freio",
+  "freio",
+  "freios",
+  "disco de freio",
+  "discos de freio",
+  "embreagem",
+  "embreagens",
+  "radiador",
+  "arrefecimento",
+  "motor",
+  "óleo",
+  "oleo",
+  "troca de óleo",
+  "troca de oleo",
+  "troquei o óleo",
+  "troquei o oleo",
+  "trocar o óleo",
+  "trocar oleo",
+  "filtro de óleo",
+  "filtro de oleo",
+  "filtro de ar",
+  "filtro de combustível",
+  "filtro de combustivel",
+  "filtro de cabine",
+  "filtro do ar",
+  "velas",
+  "vela de ignição",
+  "bateria",
+  "baterias",
+  "pneu",
+  "pneus",
+  "troca de pneu",
+  "troquei o pneu",
+  "troquei os pneus",
+  "pneu furado",
+  "remendo de pneu",
+  "calibragem",
+  "calibrar pneu",
+  "balancear pneu",
+  "lavagem",
+  "lava rapido",
+  "lava-rápido",
+  "lavagem completa",
+  "lavagem simples",
+  "lavei o carro",
+  "lavei carro",
+  "polimento",
+  "cristalização",
+  "estetica automotiva",
+  "limpeza interna",
+  "higienização",
+  "higienizacao",
+  "higienização do ar",
+  "higienizacao do ar",
+  "ar-condicionado",
+  "ar condicionado",
+  "gas do ar",
+  "revisao",
+  "revisão",
+  "revisão periódica",
+  "revisao periodica",
+  "inspecao",
+  "inspeção",
+  "checkup",
+];
 
 export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   if (!ptText || ptText.trim().length === 0) return null;
   const text = ptText.toLowerCase();
 
   // Classificação
-  const expenseHints = [
+  const baseExpenseHints = [
     "gastei",
+    "gasto",
+    "gastando",
+    "gastar",
     "paguei",
+    "pago",
     "pagar",
+    "pagando",
+    "pague",
     "coloquei",
     "abasteci",
     "abastecer",
@@ -275,14 +578,26 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
     "financiamento",
     "parcelas",
     "parcela",
-    "almoço",
-    "almoco",
-    "janta",
-    "jantar",
-    "lanche",
-    "comida",
-    "refeição",
+    "investi",
+    "investimento",
+    "comprei",
+    "comprar",
+    "compre",
+    "custou",
+    "custando",
+    "custar",
+    "usei",
+    "usando",
+    "despesa",
+    "despesas",
   ];
+const expenseHints = [
+  ...baseExpenseHints,
+  ...FUEL_KEYWORDS,
+  ...FOOD_KEYWORDS,
+  ...TOLL_KEYWORDS,
+  ...MAINTENANCE_KEYWORDS,
+];
   const incomeHints = [
     "ganhei",
     "ganho",
@@ -365,41 +680,21 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
     "comprar",
     "investi",
     "investimento",
+    "pagando",
+    "custou",
+    "custando",
+    "custar",
   ];
   const expenseCategoryTriggers = [
-    "gasolina",
-    "combustivel",
-    "combustível",
-    "alcool",
-    "álcool",
-    "etanol",
-    "diesel",
-    "tanque",
-    "pedagio",
-    "pedágio",
-    "manutencao",
-    "manutenção",
-    "troca de óleo",
-    "oleo",
-    "óleo",
-    "pneu",
-    "pneus",
-    "calibragem",
-    "lavagem",
-    "lava rapido",
-    "lava-rápido",
+    ...FUEL_KEYWORDS,
+    ...TOLL_KEYWORDS,
+    ...MAINTENANCE_KEYWORDS,
     "estacionamento",
     "seguro",
     "financiamento",
     "parcelas",
     "parcela",
-    "almoço",
-    "almoco",
-    "janta",
-    "jantar",
-    "lanche",
-    "comida",
-    "refeição",
+    ...FOOD_KEYWORDS,
   ];
 
   const isExpense = includesAny(text, expenseHints);
@@ -417,10 +712,11 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   // Mapeamentos
   if (isExpense && (hasExpensePriority || !isIncome || hasExpenseCategory)) {
     let category: string | undefined;
-    if (includesAny(text, ["gasolina", "combustivel", "combustível", "alcool", "álcool", "etanol", "diesel"])) category = "Combustível";
-    else if (includesAny(text, ["pedagio", "pedágio"])) category = "Pedágio";
-    else if (includesAny(text, ["almoço", "almoco", "lanche", "comida", "refeição", "janta", "jantar"])) category = "Alimentação";
-    else if (includesAny(text, ["manutencao", "manutenção", "oleo", "óleo", "troca de óleo", "pneu", "pneus", "calibragem", "lavagem", "lava rapido", "lava-rápido", "oficina", "mecanico", "mecânico"])) category = "Manutenção";
+    if (includesAny(text, FUEL_KEYWORDS)) category = "Combustível";
+    else if (includesAny(text, TOLL_KEYWORDS)) category = "Pedágio";
+    else if (includesAny(text, FOOD_KEYWORDS)) category = "Alimentação";
+    else if (includesAny(text, MAINTENANCE_KEYWORDS))
+      category = "Manutenção";
     else if (includesAny(text, ["estacionamento"])) category = "Outros";
     else if (includesAny(text, ["seguro"])) category = "Outros";
     else if (includesAny(text, ["financiamento", "parcela", "parcelas"])) category = "Outros";

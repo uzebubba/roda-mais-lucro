@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type SpeechRecognitionConstructor = new () => WebSpeechRecognition;
 
 type SpeechRecognitionResultEntry = {
+  isFinal?: boolean;
   0?: {
     transcript?: string;
   };
@@ -38,6 +39,7 @@ export interface SpeechState {
   supported: boolean;
   listening: boolean;
   transcript: string;
+  isFinalTranscript: boolean;
   error: string | null;
   start: () => void;
   stop: () => void;
@@ -53,9 +55,12 @@ export const useSpeechRecognition = (): SpeechState => {
 
   const supported = Boolean(SpeechRecognitionCtor);
   const recognitionRef = useRef<WebSpeechRecognition | null>(null);
+  const manualStopRef = useRef(true);
+  const restartTimeoutRef = useRef<number | null>(null);
 
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [isFinalTranscript, setIsFinalTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,28 +73,65 @@ export const useSpeechRecognition = (): SpeechState => {
     rec.interimResults = true;
 
     rec.onstart = () => {
+      if (restartTimeoutRef.current !== null) {
+        window.clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
       setListening(true);
       setError(null);
       setTranscript("");
+      setIsFinalTranscript(false);
     };
     rec.onerror = (event: SpeechRecognitionErrorLike) => {
       setError(event?.error || "speech_error");
+      manualStopRef.current = true;
       setListening(false);
+      setIsFinalTranscript(false);
     };
     rec.onend = () => {
       setListening(false);
+      setIsFinalTranscript(false);
+      if (!manualStopRef.current) {
+        if (restartTimeoutRef.current !== null) {
+          window.clearTimeout(restartTimeoutRef.current);
+        }
+        restartTimeoutRef.current = window.setTimeout(() => {
+          try {
+            rec.start();
+          } catch (_error) {
+            /* noop */
+          }
+        }, 300);
+      }
     };
     rec.onresult = (event: SpeechRecognitionEventLike) => {
       if (!event?.results) {
         return;
       }
 
-      const transcriptText = Array.from(event.results)
-        .map((result) => result?.[0]?.transcript || "")
-        .join(" ")
-        .trim();
+      let finalTranscript = "";
+      let interimTranscript = "";
 
-      setTranscript(transcriptText);
+      Array.from(event.results).forEach((result) => {
+        const snippet = result?.[0]?.transcript ?? "";
+        if (!snippet) {
+          return;
+        }
+        if (result?.isFinal) {
+          finalTranscript += `${snippet} `;
+        } else {
+          interimTranscript += `${snippet} `;
+        }
+      });
+
+      const nextTranscript = (finalTranscript || interimTranscript).trim();
+
+      if (nextTranscript.length === 0) {
+        return;
+      }
+
+      setTranscript(nextTranscript);
+      setIsFinalTranscript(finalTranscript.trim().length > 0);
     };
 
     return () => {
@@ -102,6 +144,11 @@ export const useSpeechRecognition = (): SpeechState => {
       } catch (_error) {
         /* noop */
       }
+      if (restartTimeoutRef.current !== null) {
+        window.clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
+      manualStopRef.current = true;
       recognitionRef.current = null;
     };
   }, [SpeechRecognitionCtor, supported]);
@@ -109,20 +156,52 @@ export const useSpeechRecognition = (): SpeechState => {
   const start = () => {
     if (!supported || !recognitionRef.current) return;
     try {
+      manualStopRef.current = false;
+      setIsFinalTranscript(false);
       recognitionRef.current.start();
     } catch (_error) {
-      /* noop - already started */
+      const error = _error as DOMException | Error | unknown;
+      let errorName: string | null = null;
+      if (error instanceof DOMException) {
+        errorName = error.name;
+      } else if (error && typeof error === "object" && "name" in error) {
+        errorName = String((error as { name?: string }).name);
+      }
+
+      manualStopRef.current = true;
+      setIsFinalTranscript(false);
+
+      switch (errorName) {
+        case "NotAllowedError":
+        case "PermissionDeniedError":
+          setError("not_allowed");
+          break;
+        case "NotFoundError":
+          setError("no_microphone");
+          break;
+        case "AbortError":
+          setError("abort_error");
+          break;
+        default:
+          setError("speech_error");
+      }
     }
   };
 
   const stop = () => {
     if (!supported || !recognitionRef.current) return;
     try {
+      manualStopRef.current = true;
+      if (restartTimeoutRef.current !== null) {
+        window.clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = null;
+      }
       recognitionRef.current.stop();
+      setIsFinalTranscript(false);
     } catch (_error) {
       /* noop */
     }
   };
 
-  return { supported, listening, transcript, error, start, stop };
+  return { supported, listening, transcript, isFinalTranscript, error, start, stop };
 };

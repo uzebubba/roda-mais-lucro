@@ -133,6 +133,7 @@ const Registrar = () => {
     supported: micSupported,
     listening,
     transcript,
+    isFinalTranscript,
     error: speechError,
     start: startSpeech,
     stop: stopSpeech,
@@ -299,6 +300,10 @@ const Registrar = () => {
 
     lastProcessedFuelTranscriptRef.current = cleanedTranscript;
 
+    if (!isFinalTranscript) {
+      return;
+    }
+
     if (updated || hadApplicableData) {
       if (listening) {
         stopSpeech();
@@ -312,7 +317,7 @@ const Registrar = () => {
         { id: VOICE_TOAST_ID },
       );
     }
-  }, [transcript, listening, mode, stopSpeech]);
+  }, [transcript, listening, mode, stopSpeech, isFinalTranscript]);
 
   useEffect(() => {
     if (!speechError) {

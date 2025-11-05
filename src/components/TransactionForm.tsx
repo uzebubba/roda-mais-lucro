@@ -94,7 +94,7 @@ const TransactionForm = ({
   const lastProcessedTranscriptRef = useRef("");
   const VOICE_TOAST_ID = "transaction-voice-feedback";
 
-  const { listening, transcript } = speech;
+  const { listening, transcript, stop, error: speechError, isFinalTranscript } = speech;
 
   useEffect(() => {
     if (listening) {
@@ -143,12 +143,40 @@ const TransactionForm = ({
 
     lastProcessedTranscriptRef.current = currentTranscript;
 
-    if (!listening) {
+    if (parsed.amount !== null && isFinalTranscript) {
+      if (listening) {
+        stop();
+      }
       toast.success("Campos preenchidos por voz. Confira e salve.", {
         id: VOICE_TOAST_ID,
       });
     }
-  }, [listening, transcript]);
+  }, [isFinalTranscript, listening, stop, transcript]);
+
+  useEffect(() => {
+    if (!speechError) {
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      not_allowed:
+        "Permissão para usar o microfone negada. Verifique as configurações do navegador.",
+      no_microphone:
+        "Não encontramos um microfone. Conecte um dispositivo de áudio e tente novamente.",
+      abort_error: "O microfone foi interrompido. Tente iniciar novamente.",
+      network: "Falha de rede ao processar a voz. Verifique sua conexão.",
+      "no-speech":
+        "Não detectei áudio. Confirme o microfone e tente falar novamente.",
+      "audio-capture":
+        "Não foi possível capturar o áudio. Verifique se o microfone está funcionando.",
+      "service-not-allowed":
+        "O navegador não permitiu o uso do serviço de voz.",
+      speech_error: "Não foi possível usar o microfone agora. Tente novamente.",
+    };
+
+    const message = messages[speechError] ?? messages.speech_error;
+    toast.error(message, { id: VOICE_TOAST_ID });
+  }, [speechError]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
