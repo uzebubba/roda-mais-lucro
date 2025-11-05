@@ -91,11 +91,10 @@ const TransactionForm = ({
   }, [initialType, resetForm]);
 
   // When transcription arrives, parse and fill form
-const lastProcessedTranscriptRef = useRef("");
+  const lastProcessedTranscriptRef = useRef("");
+  const VOICE_TOAST_ID = "transaction-voice-feedback";
 
-const VOICE_TOAST_ID = "transaction-voice-feedback";
-
-  const { listening, transcript, stop } = speech;
+  const { listening, transcript } = speech;
 
   useEffect(() => {
     if (listening) {
@@ -144,14 +143,12 @@ const VOICE_TOAST_ID = "transaction-voice-feedback";
 
     lastProcessedTranscriptRef.current = currentTranscript;
 
-    if (listening) {
-      stop();
+    if (!listening) {
+      toast.success("Campos preenchidos por voz. Confira e salve.", {
+        id: VOICE_TOAST_ID,
+      });
     }
-
-    toast.success("Campos preenchidos por voz. Confira e salve.", {
-      id: VOICE_TOAST_ID,
-    });
-  }, [listening, stop, transcript]);
+  }, [listening, transcript]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

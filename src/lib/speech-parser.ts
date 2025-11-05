@@ -177,6 +177,58 @@ const normalizeForMatch = (value: string): string =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const PLATFORM_PATTERNS: Array<{ platform: string; regexes: RegExp[] }> = [
+  {
+    platform: "Uber",
+    regexes: [
+      /\b(?:na|no|pela|pelo|do|da|de)?\s*uber(?:\s+(?:flash|moto|eats|bag|x|black))?\b/,
+      /\buber(?:\s+(?:flash|moto|eats|bag|x|black))?\b/,
+    ],
+  },
+  {
+    platform: "99",
+    regexes: [
+      /\b(?:na|no|pela|pelo|do|da|de)\s+99(?:\s*pop)?\b/,
+      /\b99\s*pop\b/,
+    ],
+  },
+  {
+    platform: "InDriver",
+    regexes: [
+      /\b(?:na|no|pela|pelo|do|da|de)?\s*(?:indriver|in\s+driver)\b/,
+    ],
+  },
+  {
+    platform: "Particular",
+    regexes: [
+      /\b(?:corrida|cliente)?\s*particular\b/,
+      /\bparticular\b/,
+    ],
+  },
+  {
+    platform: "iFood",
+    regexes: [/\bifood\b/],
+  },
+  {
+    platform: "Loggi",
+    regexes: [/\bloggi\b/],
+  },
+  {
+    platform: "Maxim",
+    regexes: [/\bmaxim\b/],
+  },
+];
+
+const detectPlatform = (text: string): string | undefined => {
+  const normalized = normalizeForMatch(text).replace(/[^a-z0-9\s]/g, " ");
+  for (const matcher of PLATFORM_PATTERNS) {
+    if (matcher.regexes.some((regex) => regex.test(normalized))) {
+      return matcher.platform;
+    }
+  }
+  return undefined;
+};
+
 const includesAny = (haystack: string, needles: string[]) => {
   const normalizedHaystack = normalizeForMatch(haystack);
   return needles.some((needle) =>
@@ -271,6 +323,10 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
     "entrega",
     "entregas",
     "delivery",
+    "rodei",
+    "rode",
+    "rodou",
+    "rodamos",
     "uber",
     "uber flash",
     "uber moto",
@@ -347,12 +403,16 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   ];
 
   const isExpense = includesAny(text, expenseHints);
-  const isIncome = includesAny(text, incomeHints);
+  let isIncome = includesAny(text, incomeHints);
   const hasExpensePriority = includesAny(text, expensePriorityHints);
   const hasExpenseCategory = includesAny(text, expenseCategoryTriggers);
 
   // Valor
   const amount = extractAmount(text);
+  const platform = detectPlatform(text);
+  if (platform) {
+    isIncome = true;
+  }
 
   // Mapeamentos
   if (isExpense && (hasExpensePriority || !isIncome || hasExpenseCategory)) {
@@ -374,13 +434,6 @@ export const parseTransactionSpeech = (ptText: string): ParsedSpeech | null => {
   }
 
   if (isIncome) {
-    let platform: string | undefined;
-    if (text.includes("uber")) platform = "Uber";
-    else if (text.includes("indriver") || text.includes("in driver")) platform = "InDriver";
-    else if (text.includes("99")) platform = "99";
-    else if (includesAny(text, ["particular", "corrida particular", "cliente particular"])) platform = "Particular";
-    else if (text.includes("ifood")) platform = "iFood";
-
     return {
       type: "income",
       amount,
