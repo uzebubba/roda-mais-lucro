@@ -37,6 +37,7 @@ const Historico = () => {
     useState<"income" | "expense" | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions"],
@@ -89,9 +90,13 @@ const Historico = () => {
     return scoped;
   }, [transactions, periodFilter, typeFilter, categoryFilter]);
 
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [filteredTransactions.length, periodFilter, typeFilter, categoryFilter]);
+
   const visibleTransactions = useMemo(
-    () => filteredTransactions.slice(0, 10),
-    [filteredTransactions],
+    () => filteredTransactions.slice(0, visibleCount),
+    [filteredTransactions, visibleCount],
   );
 
   const { totalIncome, totalExpenses, categoryBreakdown } = useMemo(() => {
@@ -287,6 +292,18 @@ const Historico = () => {
               </div>
             </Card>
           ))
+        )}
+
+        {filteredTransactions.length > visibleTransactions.length && (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => setVisibleCount((count) => count + 10)}
+              className="mt-2"
+            >
+              Ver mais
+            </Button>
+          </div>
         )}
       </main>
     </div>

@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   addFuelEntry,
+  addTransaction,
   getFuelEntries,
   getVehicleState,
   setVehicleKm,
@@ -39,6 +40,7 @@ import { useSpeechRecognition } from "@/hooks/useSpeech";
 import { parseFuelSpeech } from "@/lib/fuel-speech-parser";
 
 const EMPTY_FUEL_ENTRIES: FuelEntry[] = [];
+const VOICE_CAPTURE_ENABLED = false; // Toggle when the voice feature is ready
 
 const formatNumber = (value: number, minimumFractionDigits = 2) =>
   value
@@ -139,6 +141,7 @@ const Registrar = () => {
     stop: stopSpeech,
   } = speech;
   const [lastHeard, setLastHeard] = useState("");
+  const showVoiceControls = VOICE_CAPTURE_ENABLED && micSupported;
 
   const fuelEntriesQuery = useQuery({
     queryKey: ["fuelEntries"],
@@ -156,6 +159,10 @@ const Registrar = () => {
 
   const addFuelEntryMutation = useMutation({
     mutationFn: addFuelEntry,
+  });
+
+  const addTransactionMutation = useMutation({
+    mutationFn: addTransaction,
   });
 
   const setVehicleKmMutation = useMutation({
@@ -478,10 +485,37 @@ const Registrar = () => {
         liters: mode === "manual" ? derived.litersValue : undefined,
         kmCurrent: derived.km,
       });
-      await Promise.all([
+
+      let transactionRegistered = false;
+      try {
+        await addTransactionMutation.mutateAsync({
+          type: "expense",
+          amount: saved.totalCost,
+          date: saved.createdAt,
+          description: "Abastecimento",
+          category: "Combustível",
+        });
+        transactionRegistered = true;
+      } catch (transactionError) {
+        const message =
+          transactionError instanceof Error
+            ? transactionError.message
+            : "Não foi possível registrar o gasto automaticamente.";
+        toast.error(
+          `${message} O abastecimento foi salvo, mas registre o gasto manualmente em 'Registrar gasto'.`,
+        );
+      }
+
+      const invalidations = [
         queryClient.invalidateQueries({ queryKey: ["fuelEntries"] }),
         queryClient.invalidateQueries({ queryKey: ["vehicleState"] }),
-      ]);
+      ];
+      if (transactionRegistered) {
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+        );
+      }
+      await Promise.all(invalidations);
 
       toast.success("Abastecimento registrado!");
       setKmCurrent(saved.kmCurrent.toString());
@@ -535,6 +569,9 @@ const Registrar = () => {
       estimatedCost,
     };
   }, [kmUpdate, lastEntry, stats.averageCostPerKm]);
+
+  const isSavingFuel =
+    addFuelEntryMutation.isPending || addTransactionMutation.isPending;
 
   if (fuelEntriesQuery.isLoading || vehicleQuery.isLoading) {
     return (
@@ -764,7 +801,7 @@ const Registrar = () => {
             </div>
 
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-              {micSupported && (
+              {showVoiceControls ? (
                 <Button
                   type="button"
                   variant={listening ? "destructive" : "secondary"}
@@ -785,14 +822,19 @@ const Registrar = () => {
                   {listening ? <MicOff size={16} /> : <Mic size={16} />}
                   {listening ? "Parar captura" : "Falar"}
                 </Button>
+              ) : (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-muted-foreground sm:w-auto whitespace-nowrap">
+                  <Mic size={16} className="text-muted-foreground" />
+                  <span>Em breve</span>
+                </div>
               )}
               <Button
                 onClick={handleSaveFuel}
                 size="lg"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow sm:flex-1"
-                disabled={addFuelEntryMutation.isPending}
+                disabled={isSavingFuel}
               >
-                {addFuelEntryMutation.isPending ? (
+                {isSavingFuel ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Salvando...
@@ -805,7 +847,7 @@ const Registrar = () => {
                 )}
               </Button>
             </div>
-            {micSupported && lastHeard && (
+            {showVoiceControls && lastHeard && (
               <p className="text-[11px] text-muted-foreground text-right">
                 Último comando: "{lastHeard}"
               </p>

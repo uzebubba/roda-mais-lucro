@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Plus, Minus, Mic, MicOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,48 @@ const getTodayInputValue = () => {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const sanitizeCurrencyInput = (value: string) => {
+  if (!value) {
+    return "";
+  }
+  const cleaned = value.replace(/[^\d.,]/g, "").replace(/\./g, ",");
+  const endsWithSeparator = cleaned.endsWith(",");
+  const [integerPart = "", ...fractionParts] = cleaned.split(",");
+  const fractionPart = fractionParts.join("").slice(0, 2);
+  const safeInteger =
+    integerPart.length === 0 ? "0" : integerPart.replace(/^0+(?=\d)/, "") || "0";
+  if (fractionPart.length > 0) {
+    return `${safeInteger},${fractionPart}`;
+  }
+  if (endsWithSeparator) {
+    return `${safeInteger},`;
+  }
+  return safeInteger;
+};
+
+const parseCurrency = (value: string) => {
+  if (!value) {
+    return 0;
+  }
+  const normalized = value
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const formatCurrencyInput = (value: string) => {
+  const numeric = parseCurrency(value);
+  if (!Number.isFinite(numeric)) {
+    return "";
+  }
+  return numeric.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 };
 
 const TransactionForm = ({
@@ -183,8 +225,16 @@ const TransactionForm = ({
       return;
     }
 
+    let lastTodayValue = getTodayInputValue();
+
     const interval = window.setInterval(() => {
-      setDate(getTodayInputValue());
+      const nextTodayValue = getTodayInputValue();
+      if (nextTodayValue === lastTodayValue) {
+        return;
+      }
+      const previousValue = lastTodayValue;
+      lastTodayValue = nextTodayValue;
+      setDate((current) => (current === previousValue ? nextTodayValue : current));
     }, 60_000);
 
     return () => {
@@ -192,23 +242,43 @@ const TransactionForm = ({
     };
   }, []);
 
+  const handleAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setAmount(sanitizeCurrencyInput(event.target.value));
+  };
+
+  const handleAmountBlur = () => {
+    setAmount((current) => {
+      if (!current) {
+        return "";
+      }
+      return formatCurrencyInput(current);
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!amount || parseFloat(amount) <= 0) {
+    const parsedAmount = parseCurrency(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
       toast.error("Digite um valor válido");
       return;
     }
 
-    const todayDateValue = getTodayInputValue();
-    if (date !== todayDateValue) {
-      setDate(todayDateValue);
+    if (!date) {
+      toast.error("Selecione a data do lançamento");
+      return;
+    }
+
+    const selectedDate = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(selectedDate.getTime())) {
+      toast.error("Data inválida");
+      return;
     }
 
     const transactionData = {
       type,
-      amount: parseFloat(amount),
-      date: new Date().toISOString(),
+      amount: parsedAmount,
+      date: selectedDate.toISOString(),
       description:
         description || (type === "income" ? "Corridas do dia" : "Despesa"),
       ...(type === "income" && platform && { platform }),
@@ -249,9 +319,9 @@ const TransactionForm = ({
               id="date"
               type="date"
               value={date}
-              disabled
-              title="A data é preenchida automaticamente com o dia atual"
-              className="mt-1 cursor-not-allowed opacity-80"
+              onChange={(event) => setDate(event.target.value)}
+              max={getTodayInputValue()}
+              className="mt-1"
             />
           </div>
 
@@ -261,11 +331,13 @@ const TransactionForm = ({
             </Label>
             <Input
               id="amount"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
+              pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
               placeholder="0,00"
               value={amount}
-              onChange={(event) => setAmount(event.target.value)}
+              onChange={handleAmountChange}
+              onBlur={handleAmountBlur}
               className="mt-1 text-lg font-semibold"
             />
           </div>

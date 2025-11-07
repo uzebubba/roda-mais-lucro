@@ -64,12 +64,26 @@ const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 type SummaryPeriod = "today" | "week" | "month";
 
 const GREETING_MESSAGES = [
-  "{greeting}, {name}! Bora bater a meta hoje?",
-  "{greeting}, {name}! Vamos transformar cada corrida em lucro.",
-  "{greeting}, {name}! Hora de acelerar rumo ao próximo recorde.",
-  "{greeting}, {name}! Vamos fazer esse app trabalhar a favor do seu bolso!",
-  "{greeting}, {name}! Vamos fazer esse dia valer cada quilômetro.",
-  "{greeting}, {name}! Confio no seu talento — partiu lucrar?",
+  "{greeting}, {name}! Hoje o tanque é de coragem e fé.",
+  "{greeting}, {name}! Pé leve, mente no lucro.",
+  "{greeting}, {name}! Bora rodar com fé no asfalto.",
+  "{greeting}, {name}! Que o Waze seja justo hoje.",
+  "{greeting}, {name}! Café tomado, lucro garantido.",
+  "{greeting}, {name}! Boleto não espera, né? Bora girar.",
+  "{greeting}, {name}! Acelera com calma — e com estilo.",
+  "{greeting}, {name}! Hoje o app tá no clima certo.",
+  "{greeting}, {name}! Corrida boa e passageiro educado, amém.",
+  "{greeting}, {name}! Vamo fazer o dia valer cada litro.",
+  "{greeting}, {name}! Trânsito leve e pix rápido hoje.",
+  "{greeting}, {name}! Bora rodar e fugir do trânsito tóxico.",
+  "{greeting}, {name}! Fé no app, mas olho no dinâmico.",
+  "{greeting}, {name}! Dia bom é aquele que pinga sem stress.",
+  "{greeting}, {name}! Bora girar, que o tanque não se paga sozinho.",
+  "{greeting}, {name}! Bora rodar com paciência e boa playlist.",
+  "{greeting}, {name}! Só corrida boa e cliente 5 estrelas hoje.",
+  "{greeting}, {name}! O app piscou? Já sabe: partiu!",
+  "{greeting}, {name}! Hoje o volante é seu microfone.",
+  "{greeting}, {name}! Abençoa o rolê e bora pra rua.",
 ];
 
 const GREETING_STATE_KEY = "roda_plus_greeting_state";
@@ -155,6 +169,18 @@ const formatMinutesShort = (totalMinutes: number): string => {
     return `${hours}h`;
   }
   return `${minutes}min`;
+};
+
+const formatChartAxisCurrency = (value: number): string => {
+  const abs = Math.abs(value);
+  return `R$ ${abs.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+};
+
+const formatChartTooltipCurrency = (value: number): string => {
+  return `R$ ${Math.abs(value).toFixed(2).replace(".", ",")}`;
 };
 
 const isSameDay = (a: Date, b: Date): boolean =>
@@ -369,6 +395,21 @@ const Home = () => {
     };
   }, [transactions, summaryPeriod]);
 
+  const todayTotals = useMemo(() => {
+    const scoped = filterTransactionsByPeriod(transactions, "today");
+    const income = scoped
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const expenses = scoped
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    return {
+      income,
+      expenses,
+      profit: income - expenses,
+    };
+  }, [transactions]);
+
   const monthTotals = useMemo(() => {
     const scoped = filterTransactionsByPeriod(transactions, "month");
     const income = scoped
@@ -523,10 +564,20 @@ const Home = () => {
   const resolvedTodayStats = todayStats ?? defaultTodayStats;
   const workTimeLabel = formatMinutesLong(resolvedTodayStats.workMinutes);
 
-  const weeklyChartData = weeklyData.length > 0 ? weeklyData : DAY_NAMES.map((day) => ({
-    day,
-    lucro: 0,
-  }));
+  const weeklyChartData = useMemo(() => {
+    const source =
+      weeklyData.length > 0
+        ? weeklyData
+        : DAY_NAMES.map((day) => ({
+            day,
+            lucro: 0,
+          }));
+    return source.map((entry) => ({
+      ...entry,
+      displayProfit: Math.abs(entry.lucro),
+      direction: entry.lucro >= 0 ? "positive" : "negative",
+    }));
+  }, [weeklyData]);
 
   if (
     transactionsQuery.isLoading ||
@@ -714,8 +765,8 @@ const Home = () => {
 
         <GoalCard
           views={[
-            { type: "daily", goal: dailyGoal, current: resolvedTodayStats.profit },
-            { type: "monthly", goal: monthlyGoal, current: monthTotals.profit },
+            { type: "daily", goal: dailyGoal, current: todayTotals.income },
+            { type: "monthly", goal: monthlyGoal, current: monthTotals.income },
           ]}
           activeType={goalView}
           onTypeChange={(type) => setGoalView(type)}
@@ -766,19 +817,25 @@ const Home = () => {
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `R$ ${value}`}
+                tickFormatter={(value) => formatChartAxisCurrency(value as number)}
+                domain={[0, "dataMax" as const]}
               />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    const value = payload[0].value as number;
+                    const value = payload[0].payload.lucro as number;
+                    const display = payload[0].payload.displayProfit as number;
+                    const isPositive = value >= 0;
                     return (
                       <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg">
                         <p className="text-xs text-muted-foreground mb-1">
                           {payload[0].payload.day}
                         </p>
-                        <p className={`text-sm font-bold ${value >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                          R$ {value.toFixed(2).replace(".", ",")}
+                        <p className="text-[11px] text-muted-foreground">
+                          {isPositive ? "Lucro" : "Prejuízo"}
+                        </p>
+                        <p className={`text-sm font-bold ${isPositive ? 'text-primary' : 'text-destructive'}`}>
+                          {formatChartTooltipCurrency(display)}
                         </p>
                       </div>
                     );
@@ -788,7 +845,7 @@ const Home = () => {
                 cursor={{ fill: "hsl(var(--muted))", opacity: 0.1 }}
               />
               <Bar 
-                dataKey="lucro" 
+                dataKey="displayProfit" 
                 radius={[8, 8, 0, 0]} 
                 maxBarSize={45}
                 animationDuration={800}
@@ -797,7 +854,7 @@ const Home = () => {
                 {weeklyChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.lucro >= 0 ? "url(#profitGradient)" : "url(#lossGradient)"}
+                    fill={entry.direction === "positive" ? "url(#profitGradient)" : "url(#lossGradient)"}
                     className="drop-shadow-sm"
                   />
                 ))}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -38,6 +38,30 @@ import {
 } from "@/lib/supabase-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+
+const sanitizeCurrencyInput = (value: string) => {
+  if (!value) return "";
+  const cleaned = value.replace(/[^\d.,]/g, "").replace(/\./g, ",");
+  const endsWithSeparator = cleaned.endsWith(",");
+  const [integerPart = "", ...fractionParts] = cleaned.split(",");
+  const fractionPart = fractionParts.join("").slice(0, 2);
+  const safeInteger =
+    integerPart.length === 0 ? "0" : integerPart.replace(/^0+(?=\d)/, "") || "0";
+  if (fractionPart.length > 0) {
+    return `${safeInteger},${fractionPart}`;
+  }
+  if (endsWithSeparator) {
+    return `${safeInteger},`;
+  }
+  return safeInteger;
+};
+
+const parseCurrency = (value: string) => {
+  if (!value) return 0;
+  const normalized = value.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
 
 const Fixas = () => {
   const navigate = useNavigate();
@@ -199,7 +223,7 @@ const Fixas = () => {
       return;
     }
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseCurrency(amount);
     const parsedDay = parseInt(dueDay, 10);
 
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -217,7 +241,7 @@ const Fixas = () => {
         name,
         amount: parsedAmount,
         dueDay: parsedDay,
-        paid: true,
+        paid: false,
       });
       await queryClient.invalidateQueries({ queryKey: ["fixedExpenses"] });
       toast.success("Despesa fixa adicionada!");
@@ -377,10 +401,18 @@ const Fixas = () => {
                 <Label htmlFor="amount">Valor (R$)</Label>
                 <Input
                   id="amount"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
                   value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setAmount(sanitizeCurrencyInput(event.target.value))
+                  }
+                  onBlur={() =>
+                    setAmount((current) =>
+                      current ? parseCurrency(current).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
+                    )
+                  }
                   placeholder="0,00"
                   className="mt-1"
                 />
