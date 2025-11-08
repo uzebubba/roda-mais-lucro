@@ -109,7 +109,7 @@ const chunkInsert = async <T extends keyof TableInsertMap>(
     const chunk = rows.slice(index, index + chunkSize);
     const { error } = await supabase
       .from(table)
-      .insert(chunk as TablesInsert<T>[]);
+      .insert(chunk as any);
     if (error) {
       throw error;
     }

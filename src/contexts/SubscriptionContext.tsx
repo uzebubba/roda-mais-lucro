@@ -21,14 +21,14 @@ const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
 
 const SUBSCRIPTION_TIERS = {
   MENSAL: {
-    price_id: "price_1SP36rFjEgMAqKc1KqkVAjrJ",
-    product_id: "prod_TLkcPzdXlwKhGv",
+    price_id: "price_1SQ8OACOuTerzWXr4JBM3gML",
+    product_id: "prod_TMs8RgdfiUI745",
     name: "Plano Mensal",
     price: "R$ 29,90/mês",
   },
   ANUAL: {
-    price_id: "price_1SP5H1FjEgMAqKc1xSvUBUbH",
-    product_id: "prod_TLkcPzdXlwKhGv",
+    price_id: "price_1SQ8OlCOuTerzWXrnpCCTA6n",
+    product_id: "prod_TMs8RgdfiUI745",
     name: "Plano Anual",
     price: "R$ 199,90/ano",
   },
