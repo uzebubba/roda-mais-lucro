@@ -89,6 +89,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lifetime_access: {
+        Row: {
+          created_at: string | null
+          email: string
+          granted_at: string | null
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          granted_at?: string | null
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          granted_at?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_audit_logs: {
         Row: {
           created_at: string

@@ -45,6 +45,26 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Verificar se usuário tem acesso vitalício
+    const { data: lifetimeAccess } = await supabaseClient
+      .from('lifetime_access')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (lifetimeAccess) {
+      logStep("User has lifetime access", { userId: user.id, email: user.email });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        product_id: 'lifetime',
+        price_id: 'lifetime',
+        subscription_end: null
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
