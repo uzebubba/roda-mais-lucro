@@ -99,19 +99,30 @@ export const TutorialOverlay = ({
     onNext();
   };
 
+  const tooltipPositionStyle = isCompact
+    ? {
+        top: "auto",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+        left: "50%",
+        transform: "translate(-50%, 0)",
+      }
+    : {
+        top: tooltipTop,
+        left: tooltipLeft,
+        transform: tooltipTransform,
+      };
+
   const tooltip = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={step.title}
       className={`pointer-events-auto fixed z-[120] ${
-        isCompact ? "w-[calc(100%-1.5rem)] max-w-none rounded-3xl" : "w-[calc(100%-2rem)] max-w-sm rounded-2xl"
-      } border border-border/50 bg-card/95 p-5 text-card-foreground shadow-2xl backdrop-blur-lg`}
-      style={{
-        top: tooltipTop,
-        left: tooltipLeft,
-        transform: tooltipTransform,
-      }}
+        isCompact
+          ? "w-[calc(100%-1.25rem)] max-w-lg rounded-[28px] px-5 pb-5 pt-6"
+          : "w-[calc(100%-2rem)] max-w-sm rounded-2xl p-5"
+      } border border-border/50 bg-card/95 text-card-foreground shadow-2xl backdrop-blur-lg`}
+      style={tooltipPositionStyle}
     >
       <button
         type="button"
@@ -131,24 +142,56 @@ export const TutorialOverlay = ({
           Não encontramos esse ponto agora, mas guarde essa dica.
         </p>
       )}
-      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          onClick={onSkip}
-        >
-          Pular tutorial
-        </button>
-        <div className="flex w-full gap-2 sm:w-auto">
-          {!isFirstStep && (
-            <Button variant="outline" className="flex-1 sm:flex-none" onClick={onBack}>
-              Voltar
-            </Button>
-          )}
-          <Button className="flex-1 sm:flex-none" onClick={handlePrimaryAction}>
-            {primaryLabel}
-          </Button>
-        </div>
+      <div
+        className={`mt-5 flex ${
+          isCompact ? "flex-col gap-3" : "flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between"
+        }`}
+      >
+        {isCompact ? (
+          <>
+            <div className="flex w-full gap-2">
+              {!isFirstStep && (
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 text-base"
+                  onClick={onBack}
+                >
+                  Voltar
+                </Button>
+              )}
+              <Button className="flex-1 h-12 text-base" onClick={handlePrimaryAction}>
+                {primaryLabel}
+              </Button>
+            </div>
+            <button
+              type="button"
+              className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              onClick={onSkip}
+            >
+              Pular tutorial
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              onClick={onSkip}
+            >
+              Pular tutorial
+            </button>
+            <div className="flex w-full gap-2 sm:w-auto">
+              {!isFirstStep && (
+                <Button variant="outline" className="flex-1 sm:flex-none" onClick={onBack}>
+                  Voltar
+                </Button>
+              )}
+              <Button className="flex-1 sm:flex-none" onClick={handlePrimaryAction}>
+                {primaryLabel}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
