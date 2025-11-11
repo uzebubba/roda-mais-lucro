@@ -17,6 +17,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
+import { TutorialProvider } from "@/contexts/TutorialContext";
 
 const queryClient = new QueryClient();
 
@@ -29,83 +30,85 @@ const App = () => {
         <AuthProvider>
           <SubscriptionProvider>
             <BrowserRouter>
-              <ScrollToTop />
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <>
-                        <Home />
-                        <BottomNav />
-                      </>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/registrar"
-                  element={
-                    <ProtectedRoute>
-                      <>
-                        <Registrar />
-                        <BottomNav />
-                      </>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/historico"
-                  element={
-                    <ProtectedRoute>
-                      <>
-                        <Historico />
-                        <BottomNav />
-                      </>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/fixas"
-                  element={
-                    <ProtectedRoute>
-                      <>
-                        <Fixas />
-                        <BottomNav />
-                      </>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/perfil"
-                  element={
-                    <ProtectedRoute>
-                      <>
-                        <Perfil />
-                        <BottomNav />
-                      </>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/migrate"
-                  element={
-                    <ProtectedRoute>
-                      <MigrateData />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/assinatura" element={<Assinatura />} />
-                <Route path="/login" element={<Login />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route
-                  path="*"
-                  element={
-                    <ProtectedRoute>
-                      <NotFound />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
+              <TutorialProvider>
+                <ScrollToTop />
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <>
+                          <Home />
+                          <BottomNav />
+                        </>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/registrar"
+                    element={
+                      <ProtectedRoute>
+                        <>
+                          <Registrar />
+                          <BottomNav />
+                        </>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/historico"
+                    element={
+                      <ProtectedRoute>
+                        <>
+                          <Historico />
+                          <BottomNav />
+                        </>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fixas"
+                    element={
+                      <ProtectedRoute>
+                        <>
+                          <Fixas />
+                          <BottomNav />
+                        </>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/perfil"
+                    element={
+                      <ProtectedRoute>
+                        <>
+                          <Perfil />
+                          <BottomNav />
+                        </>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/migrate"
+                    element={
+                      <ProtectedRoute>
+                        <MigrateData />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/assinatura" element={<Assinatura />} />
+                  <Route path="/login" element={<Login />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route
+                    path="*"
+                    element={
+                      <ProtectedRoute>
+                        <NotFound />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </TutorialProvider>
             </BrowserRouter>
           </SubscriptionProvider>
         </AuthProvider>

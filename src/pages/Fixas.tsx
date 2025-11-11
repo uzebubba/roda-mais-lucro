@@ -38,6 +38,12 @@ import {
 } from "@/lib/supabase-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { triggerEducationalTip } from "@/lib/educational-tips";
+import {
+  FixedTutorialProvider,
+  useFixedTutorialAnchor,
+  useFixedTutorialControls,
+} from "@/components/tutorial/FixedTutorial";
 
 const sanitizeCurrencyInput = (value: string) => {
   if (!value) return "";
@@ -68,6 +74,17 @@ const Fixas = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user?.id);
+  const maintenanceCardRef =
+    useFixedTutorialAnchor<HTMLDivElement>("fixas-maintenance-card");
+  const maintenanceSettingsRef =
+    useFixedTutorialAnchor<HTMLDivElement>("fixas-maintenance-settings");
+  const maintenanceRegisterRef =
+    useFixedTutorialAnchor<HTMLButtonElement>("fixas-maintenance-register");
+  const expensesCardRef =
+    useFixedTutorialAnchor<HTMLDivElement>("fixas-expense-card");
+  const addExpenseButtonRef =
+    useFixedTutorialAnchor<HTMLButtonElement>("fixas-add-button");
+  const { restartTutorial } = useFixedTutorialControls();
 
   const expensesQuery = useQuery({
     queryKey: ["fixedExpenses"],
@@ -119,6 +136,12 @@ const Fixas = () => {
   const deleteExpenseMutation = useMutation({
     mutationFn: deleteFixedExpense,
   });
+
+  useEffect(() => {
+    triggerEducationalTip("fixed-page", () => {
+      toast.info("💡 Cadastre suas contas fixas aqui. O app avisa quando vence!");
+    });
+  }, []);
 
   useEffect(() => {
     const settings = oilSettingsQuery.data;
@@ -377,7 +400,7 @@ const Fixas = () => {
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button ref={addExpenseButtonRef} size="sm" className="gap-2">
               <Plus size={16} />
               Adicionar
             </Button>
@@ -451,7 +474,10 @@ const Fixas = () => {
 
       <main className="p-4 max-w-md mx-auto space-y-6">
         {/* Oil reminder */}
-        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/80 to-background/95 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+        <Card
+          ref={maintenanceCardRef}
+          className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/80 to-background/95 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in"
+        >
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_10%,rgba(34,197,94,0.22),transparent_60%),radial-gradient(circle_at_90%_85%,rgba(16,185,129,0.18),transparent_68%)]"
             aria-hidden
@@ -474,20 +500,31 @@ const Fixas = () => {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="gap-2 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
-                onClick={handleRegisterOilChange}
-                disabled={registerOilChangeMutation.isPending}
-              >
-                {registerOilChangeMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Droplet size={16} />
-                )}
-                Registrar troca
-              </Button>
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => restartTutorial()}
+                >
+                  Ver tutorial
+                </Button>
+                <Button
+                  ref={maintenanceRegisterRef}
+                  variant="secondary"
+                  size="sm"
+                  className="gap-2 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                  onClick={handleRegisterOilChange}
+                  disabled={registerOilChangeMutation.isPending}
+                >
+                  {registerOilChangeMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Droplet size={16} />
+                  )}
+                  Registrar troca
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -541,61 +578,66 @@ const Fixas = () => {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="intervalKm"
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            <div ref={maintenanceSettingsRef} className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="intervalKm"
+                    className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Intervalo (km)
+                  </Label>
+                  <Input
+                    id="intervalKm"
+                    type="number"
+                    min="500"
+                    step="100"
+                    value={intervalInput}
+                    onChange={(event) => setIntervalInput(event.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="lastChangeKm"
+                    className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Última troca (km)
+                  </Label>
+                  <Input
+                    id="lastChangeKm"
+                    type="number"
+                    min="0"
+                    value={lastChangeInput}
+                    onChange={(event) => setLastChangeInput(event.target.value)}
+                  />
+                </div>
+                <Button
+                  className="sm:col-span-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow"
+                  onClick={handleSaveOilSettings}
+                  disabled={updateOilSettingsMutation.isPending}
                 >
-                  Intervalo (km)
-                </Label>
-                <Input
-                  id="intervalKm"
-                  type="number"
-                  min="500"
-                  step="100"
-                  value={intervalInput}
-                  onChange={(event) => setIntervalInput(event.target.value)}
-                />
+                  {updateOilSettingsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar size={18} />
+                      Salvar configurações
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="lastChangeKm"
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Última troca (km)
-                </Label>
-                <Input
-                  id="lastChangeKm"
-                  type="number"
-                  min="0"
-                  value={lastChangeInput}
-                  onChange={(event) => setLastChangeInput(event.target.value)}
-                />
-              </div>
-              <Button
-                className="sm:col-span-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow py-3 text-base font-semibold hover:shadow-glow"
-                onClick={handleSaveOilSettings}
-                disabled={updateOilSettingsMutation.isPending}
-              >
-                {updateOilSettingsMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Calendar size={18} />
-                    Salvar configurações
-                  </>
-                )}
-              </Button>
             </div>
           </div>
         </Card>
 
         {/* Fixed expenses */}
-        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-b from-background/92 via-background/82 to-background/96 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+        <Card
+          ref={expensesCardRef}
+          className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-b from-background/92 via-background/82 to-background/96 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in"
+        >
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_5%,rgba(34,197,94,0.18),transparent_60%),radial-gradient(circle_at_92%_95%,rgba(16,185,129,0.16),transparent_65%)]"
             aria-hidden
@@ -695,4 +737,12 @@ const Fixas = () => {
   );
 };
 
-export default Fixas;
+const FixasPage = () => {
+  return (
+    <FixedTutorialProvider>
+      <Fixas />
+    </FixedTutorialProvider>
+  );
+};
+
+export default FixasPage;

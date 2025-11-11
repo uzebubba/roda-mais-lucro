@@ -38,6 +38,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSpeechRecognition } from "@/hooks/useSpeech";
 import { parseFuelSpeech } from "@/lib/fuel-speech-parser";
+import { triggerEducationalTip } from "@/lib/educational-tips";
+import {
+  FuelTutorialProvider,
+  useFuelTutorialAnchor,
+  useFuelTutorialControls,
+} from "@/components/tutorial/FuelTutorial";
 
 const EMPTY_FUEL_ENTRIES: FuelEntry[] = [];
 const VOICE_CAPTURE_ENABLED = false; // Toggle when the voice feature is ready
@@ -124,6 +130,13 @@ const Registrar = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user?.id);
+  const fuelCardAnchorRef = useFuelTutorialAnchor<HTMLDivElement>("fuel-card");
+  const fuelModeAnchorRef = useFuelTutorialAnchor<HTMLDivElement>("fuel-mode");
+  const fuelInputsAnchorRef = useFuelTutorialAnchor<HTMLDivElement>("fuel-inputs");
+  const kmCardAnchorRef = useFuelTutorialAnchor<HTMLDivElement>("fuel-km-card");
+  const kmSummaryAnchorRef = useFuelTutorialAnchor<HTMLDivElement>("fuel-km-summary");
+  const kmUpdateAnchorRef = useFuelTutorialAnchor<HTMLButtonElement>("fuel-km-update");
+  const { restartTutorial } = useFuelTutorialControls();
   const [mode, setMode] = useState<"automatic" | "manual">("automatic");
   const [pricePerLiter, setPricePerLiter] = useState("");
   const [totalCost, setTotalCost] = useState("");
@@ -168,6 +181,12 @@ const Registrar = () => {
   const setVehicleKmMutation = useMutation({
     mutationFn: setVehicleKm,
   });
+
+  useEffect(() => {
+    triggerEducationalTip("fuel-page", () => {
+      toast.info("💡 Dica: Use o modo automático! Ele calcula os litros pra você.");
+    });
+  }, []);
 
   useEffect(() => {
     const vehicle = vehicleQuery.data;
@@ -603,7 +622,10 @@ const Registrar = () => {
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
-        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/90 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+        <Card
+          ref={fuelCardAnchorRef}
+          className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/90 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in"
+        >
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(34,197,94,0.18),transparent_60%),radial-gradient(circle_at_100%_100%,rgba(16,185,129,0.14),transparent_65%)]"
             aria-hidden
@@ -624,32 +646,44 @@ const Registrar = () => {
                 </h2>
               </div>
               </div>
-              <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                {mode === "automatic" ? "Modo automático" : "Modo manual"}
-              </span>
+              <div className="flex flex-col items-end gap-2 text-right">
+                <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  {mode === "automatic" ? "Modo automático" : "Modo manual"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => restartTutorial()}
+                >
+                  Ver tutorial
+                </Button>
+              </div>
             </div>
 
-            <Tabs
-              value={mode}
-              onValueChange={(value) => setMode(value as "automatic" | "manual")}
-            >
-              <TabsList className="grid w-full grid-cols-2 rounded-full border border-primary/20 bg-background/60 p-1 text-sm backdrop-blur">
-                <TabsTrigger
-                  value="automatic"
-                  className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
-                >
-                  Automático
-                </TabsTrigger>
-                <TabsTrigger
-                  value="manual"
-                  className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
-                >
-                  Manual
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div ref={fuelModeAnchorRef}>
+              <Tabs
+                value={mode}
+                onValueChange={(value) => setMode(value as "automatic" | "manual")}
+              >
+                <TabsList className="grid w-full grid-cols-2 rounded-full border border-primary/20 bg-background/60 p-1 text-sm backdrop-blur">
+                  <TabsTrigger
+                    value="automatic"
+                    className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
+                  >
+                    Automático
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="manual"
+                    className="rounded-full px-3 py-2 text-sm font-medium data-[state=active]:bg-primary/15 data-[state=active]:text-primary transition-all"
+                  >
+                    Manual
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div ref={fuelInputsAnchorRef} className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 rounded-2xl border border-emerald-400/20 bg-background/70 p-3 shadow-[0_10px_30px_-28px_rgba(16,185,129,0.6)] backdrop-blur">
                 <Label
                   htmlFor="pricePerLiter"
@@ -855,7 +889,10 @@ const Registrar = () => {
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in">
+        <Card
+          ref={kmCardAnchorRef}
+          className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-b from-background/92 via-background/75 to-background/90 p-4 sm:p-5 shadow-[0_24px_68px_-38px_rgba(16,185,129,0.55)] glass-card animate-fade-in"
+        >
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(34,197,94,0.22),transparent_58%),radial-gradient(circle_at_88%_92%,rgba(16,185,129,0.16),transparent_65%)]"
             aria-hidden
@@ -896,12 +933,13 @@ const Registrar = () => {
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-emerald-200/80">
-                  <Gauge size={16} />
-                  <span>Resumo do último abastecimento</span>
-                </div>
+            <div ref={kmSummaryAnchorRef} className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-emerald-200/80">
+                    <Gauge size={16} />
+                    <span>Resumo do último abastecimento</span>
+                  </div>
                 <div className="mt-3 space-y-1.5 text-sm">
                   <p>
                     <span className="text-muted-foreground">KM rodados:</span>{" "}
@@ -954,27 +992,29 @@ const Registrar = () => {
                       : "--"}
                   </p>
                 </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-emerald-400/30 bg-emerald-500/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Resumo do dia
+                </p>
+                {entries.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted-foreground/80">
+                    Nenhum abastecimento registrado ainda.
+                  </p>
+                ) : (
+                  <ul className="mt-2 space-y-1.5 text-sm text-foreground/90">
+                    <li>• Litros: {formatNumber(entries[0].liters)}</li>
+                    <li>• KM: {formatNumber(entries[0].kmCurrent, 0)} km</li>
+                    <li>• Gasto: {formatCurrency(entries[0].totalCost)}</li>
+                  </ul>
+                )}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-emerald-400/30 bg-emerald-500/5 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Resumo do dia
-              </p>
-              {entries.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground/80">
-                  Nenhum abastecimento registrado ainda.
-                </p>
-              ) : (
-                <ul className="mt-2 space-y-1.5 text-sm text-foreground/90">
-                  <li>• Litros: {formatNumber(entries[0].liters)}</li>
-                  <li>• KM: {formatNumber(entries[0].kmCurrent, 0)} km</li>
-                  <li>• Gasto: {formatCurrency(entries[0].totalCost)}</li>
-                </ul>
-              )}
-            </div>
-
             <Button
+              ref={kmUpdateAnchorRef}
               onClick={handleUpdateKm}
               variant="secondary"
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-3 text-base font-semibold text-primary hover:bg-primary/15"
@@ -999,4 +1039,12 @@ const Registrar = () => {
   );
 };
 
-export default Registrar;
+const RegistrarPage = () => {
+  return (
+    <FuelTutorialProvider>
+      <Registrar />
+    </FuelTutorialProvider>
+  );
+};
+
+export default RegistrarPage;

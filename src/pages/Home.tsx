@@ -17,6 +17,7 @@ import { EditGoalDialog } from "@/components/EditGoalDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import TransactionForm from "@/components/TransactionForm";
+import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
 import {
   Drawer,
   DrawerContent,
@@ -54,8 +55,10 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, 
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTutorialAnchor } from "@/contexts/TutorialContext";
 import { useNavigate } from "react-router-dom";
 import { hasLegacyData } from "@/lib/local-migration";
+import { triggerEducationalTip } from "@/lib/educational-tips";
 
 const EMPTY_TRANSACTIONS: Transaction[] = [];
 
@@ -211,6 +214,11 @@ const Home = () => {
   const [weeklyData, setWeeklyData] = useState<Array<{ day: string; lucro: number }>>([]);
   const [showMigrationBanner, setShowMigrationBanner] = useState(false);
   const [dayKey, setDayKey] = useState(() => new Date().toISOString().slice(0, 10));
+  const welcomeAnchorRef = useTutorialAnchor<HTMLElement>("home-welcome");
+  const summaryAnchorRef = useTutorialAnchor<HTMLDivElement>("home-summary");
+  const registerAnchorRef = useTutorialAnchor<HTMLDivElement>("home-register");
+  const dailyStatsAnchorRef = useTutorialAnchor<HTMLDivElement>("home-daily-stats");
+  const goalCardAnchorRef = useTutorialAnchor<HTMLDivElement>("home-goal");
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions"],
@@ -428,6 +436,18 @@ const Home = () => {
   const dailyGoal = userProfile?.dailyGoal ?? 300;
   const monthlyGoal = userProfile?.monthlyGoal ?? 6000;
 
+  useEffect(() => {
+    if (dailyGoal <= 0) {
+      return;
+    }
+    if (todayTotals.income < dailyGoal) {
+      return;
+    }
+    triggerEducationalTip("daily-goal", () => {
+      toast.success("🏆 Meta do dia batida! Você é demais!");
+    });
+  }, [dailyGoal, todayTotals.income]);
+
   const weeklyTotalMinutes = weeklyWorkHistory.reduce(
     (sum, entry) => sum + entry.totalMinutes,
     0,
@@ -511,6 +531,10 @@ const Home = () => {
   });
 
   const handleTransactionSaved = (transaction: Transaction) => {
+    const previousTransactions =
+      queryClient.getQueryData<Transaction[]>(["transactions"]) ?? [];
+    const isFirstTransaction = previousTransactions.length === 0;
+
     const updatedTransactions =
       queryClient.setQueryData<Transaction[]>(["transactions"], (previous) => {
         const existing = Array.isArray(previous) ? previous : [];
@@ -525,6 +549,12 @@ const Home = () => {
       queryClient.getQueryData<WorkSession[]>(["workSessions"]) ?? [];
 
     void refreshDerivedData(updatedTransactions, cachedSessions);
+
+    if (isFirstTransaction) {
+      triggerEducationalTip("first-transaction", () => {
+        toast.success("🎉 Primeira corrida registrada! Continue assim!");
+      });
+    }
 
     setActiveType(null);
     void queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -593,8 +623,12 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="border-b border-border/30 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="mx-auto w-full max-w-md px-4 py-4">
+      <header
+        ref={welcomeAnchorRef}
+        className="border-b border-border/30 bg-card/50 backdrop-blur-sm sticky top-0 z-10"
+      >
+        <div className="mx-auto w-full max-w-md px-4 py-4 relative">
+          <TutorialHelpButton className="absolute right-4 top-3 sm:top-4" />
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
               <Wallet className="w-5 h-5 text-primary-foreground" />
@@ -708,7 +742,7 @@ const Home = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-3 gap-3 animate-fade-in">
+        <div ref={summaryAnchorRef} className="grid grid-cols-3 gap-3 animate-fade-in">
           <SummaryCard
             title="Ganhei"
             value={totals.income}
@@ -729,7 +763,7 @@ const Home = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 animate-fade-in">
+        <div ref={registerAnchorRef} className="grid grid-cols-2 gap-3 animate-fade-in">
           <Button
             size="lg"
             onClick={() => setActiveType("income")}
@@ -749,35 +783,39 @@ const Home = () => {
           </Button>
         </div>
 
-        <DailyStatsCard
-          trips={resolvedTodayStats.trips}
-          workTime={workTimeLabel}
-          avgProfitPerTrip={resolvedTodayStats.avgProfitPerTrip}
-          isWorking={resolvedTodayStats.isWorking}
-          onStartShift={handleStartShift}
-          onStopShift={handleStopShift}
-          weeklyTotal={weeklyTotalLabel}
-          activeSessionStart={resolvedTodayStats.activeSessionStart}
-          onOpenHistory={() => setIsWorkHistoryOpen(true)}
-          summaryPeriod={summaryPeriod}
-          onSummaryPeriodChange={handleSummaryPeriodChange}
-        />
+        <div ref={dailyStatsAnchorRef}>
+          <DailyStatsCard
+            trips={resolvedTodayStats.trips}
+            workTime={workTimeLabel}
+            avgProfitPerTrip={resolvedTodayStats.avgProfitPerTrip}
+            isWorking={resolvedTodayStats.isWorking}
+            onStartShift={handleStartShift}
+            onStopShift={handleStopShift}
+            weeklyTotal={weeklyTotalLabel}
+            activeSessionStart={resolvedTodayStats.activeSessionStart}
+            onOpenHistory={() => setIsWorkHistoryOpen(true)}
+            summaryPeriod={summaryPeriod}
+            onSummaryPeriodChange={handleSummaryPeriodChange}
+          />
+        </div>
 
-        <GoalCard
-          views={[
-            { type: "daily", goal: dailyGoal, current: todayTotals.income },
-            { type: "monthly", goal: monthlyGoal, current: monthTotals.income },
-          ]}
-          activeType={goalView}
-          onTypeChange={(type) => setGoalView(type)}
-          actionSlot={
-            <EditGoalDialog
-              initialDaily={dailyGoal}
-              initialMonthly={monthlyGoal}
-              onSave={handleGoalsUpdated}
-            />
-          }
-        />
+        <div ref={goalCardAnchorRef}>
+          <GoalCard
+            views={[
+              { type: "daily", goal: dailyGoal, current: todayTotals.income },
+              { type: "monthly", goal: monthlyGoal, current: monthTotals.income },
+            ]}
+            activeType={goalView}
+            onTypeChange={(type) => setGoalView(type)}
+            actionSlot={
+              <EditGoalDialog
+                initialDaily={dailyGoal}
+                initialMonthly={monthlyGoal}
+                onSave={handleGoalsUpdated}
+              />
+            }
+          />
+        </div>
 
         <Card className="p-5 glass-card overflow-hidden">
           <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">

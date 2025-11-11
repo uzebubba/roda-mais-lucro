@@ -1,6 +1,7 @@
 import { Home, Fuel, History, Calendar, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useTutorialAnchor } from "@/contexts/TutorialContext";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/" },
@@ -11,6 +12,10 @@ const navItems = [
 ];
 
 export const BottomNav = () => {
+  const fuelAnchorRef = useTutorialAnchor<HTMLAnchorElement>("bottomnav-fuel");
+  const historicoAnchorRef = useTutorialAnchor<HTMLAnchorElement>("bottomnav-historico");
+  const fixasAnchorRef = useTutorialAnchor<HTMLAnchorElement>("bottomnav-fixas");
+  const perfilAnchorRef = useTutorialAnchor<HTMLAnchorElement>("bottomnav-perfil");
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border/50 z-50 shadow-lg">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto px-2">
@@ -18,6 +23,17 @@ export const BottomNav = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            ref={
+              item.path === "/registrar"
+                ? fuelAnchorRef
+                : item.path === "/historico"
+                  ? historicoAnchorRef
+                  : item.path === "/fixas"
+                    ? fixasAnchorRef
+                    : item.path === "/perfil"
+                      ? perfilAnchorRef
+                      : undefined
+            }
             className={({ isActive }) =>
               cn(
                 "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 min-w-[60px] relative",

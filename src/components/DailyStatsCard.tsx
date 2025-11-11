@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTutorialAnchor } from "@/contexts/TutorialContext";
 
 interface DailyStatsCardProps {
   trips: number;
@@ -55,6 +56,8 @@ export const DailyStatsCard = ({
   const startTimeLabel = formatStartTime(activeSessionStart);
   const periodLabel =
     summaryPeriod === "today" ? "Hoje" : summaryPeriod === "week" ? "Semana" : "Mês";
+  const periodAnchorRef = useTutorialAnchor<HTMLButtonElement>("home-period-toggle");
+  const shiftAnchorRef = useTutorialAnchor<HTMLButtonElement>("home-shift-control");
 
   return (
     <Card className="p-5 space-y-5 glass-card animate-fade-in">
@@ -73,6 +76,7 @@ export const DailyStatsCard = ({
                 variant="outline"
                 size="sm"
                 className="flex flex-col items-center gap-1 rounded-full border-border/70 bg-background/80 px-3 py-2 text-[10px] font-semibold text-muted-foreground shadow-sm transition hover:bg-muted"
+                ref={periodAnchorRef}
               >
                 <CalendarRange className="h-3.5 w-3.5" />
                 {periodLabel}
@@ -144,6 +148,7 @@ export const DailyStatsCard = ({
             variant={isWorking ? "destructive" : "default"}
             onClick={isWorking ? onStopShift : onStartShift}
             className="inline-flex items-center gap-2"
+            ref={shiftAnchorRef}
           >
             {isWorking ? (
               <>
