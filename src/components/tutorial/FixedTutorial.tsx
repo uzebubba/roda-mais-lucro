@@ -144,7 +144,7 @@ export const FixedTutorialProvider = ({ children }: { children: ReactNode }) => 
       return;
     }
     const isCompact = window.innerWidth <= 520;
-    scrollElementIntoView(element, { bottomOffset: isCompact ? 320 : 80 });
+    scrollElementIntoView(element, { bottomOffset: isCompact ? 380 : 80 });
     const rect = element.getBoundingClientRect();
     setTargetRect({
       top: rect.top,
