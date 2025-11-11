@@ -55,41 +55,38 @@ export const TutorialOverlay = ({
 
   const highlightStyle = targetRect
     ? {
-        top: clamp(targetRect.top - padding, 12, viewportHeight - 12),
-        left: clamp(targetRect.left - padding, 12, viewportWidth - 12),
-        width: targetRect.width + padding * 2,
+        top: clamp(targetRect.top - padding, 8, viewportHeight - 8),
+        left: clamp(targetRect.left - padding, 8, viewportWidth - 8),
+        width: Math.min(targetRect.width + padding * 2, viewportWidth - 16),
         height: targetRect.height + padding * 2,
       }
     : null;
 
-  let tooltipTop = targetRect
-    ? step.placement === "top"
-      ? targetRect.top - 20
-      : targetRect.top + targetRect.height + 20
-    : viewportHeight / 2;
-  if (isCompact) {
-    tooltipTop = viewportHeight - 240;
-  } else {
-    tooltipTop = clamp(
-      tooltipTop,
-      24,
-      viewportHeight - 24,
-    );
-  }
-  const tooltipLeft = clamp(
-    targetRect ? targetRect.left + targetRect.width / 2 : viewportWidth / 2,
-    24,
-    viewportWidth - 24,
-  );
-
-  const tooltipTransform =
-    isCompact
-      ? "translate(-50%, 0)"
-      : targetRect && step.placement === "top"
-      ? "translate(-50%, -100%)"
-      : targetRect
-        ? "translate(-50%, 0)"
-        : "translate(-50%, -50%)";
+  const tooltipPositionStyle = isCompact
+    ? {
+        position: "fixed" as const,
+        bottom: "0",
+        left: "0",
+        right: "0",
+        transform: "none",
+        borderRadius: "24px 24px 0 0",
+        maxHeight: "70vh",
+      }
+    : targetRect
+    ? {
+        position: "fixed" as const,
+        top: step.placement === "top" 
+          ? `${clamp(targetRect.top - 180, 60, viewportHeight - 200)}px`
+          : `${clamp(targetRect.top + targetRect.height + 20, 60, viewportHeight - 200)}px`,
+        left: "50%",
+        transform: "translateX(-50%)",
+      }
+    : {
+        position: "fixed" as const,
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+      };
 
   const handlePrimaryAction = () => {
     if (isLastStep) {
@@ -99,120 +96,103 @@ export const TutorialOverlay = ({
     onNext();
   };
 
-  const tooltipPositionStyle = isCompact
-    ? {
-        top: "auto",
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
-        left: "50%",
-        transform: "translate(-50%, 0)",
-      }
-    : {
-        top: tooltipTop,
-        left: tooltipLeft,
-        transform: tooltipTransform,
-      };
-
   const tooltip = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={step.title}
-      className={`pointer-events-auto fixed z-[120] ${
+      className={`pointer-events-auto z-[120] ${
         isCompact
-          ? "w-[calc(100%-1.25rem)] max-w-lg rounded-[28px] px-5 pb-5 pt-6"
+          ? "w-full px-6 pb-8 pt-6 safe-area-inset-bottom"
           : "w-[calc(100%-2rem)] max-w-sm rounded-2xl p-5"
-      } border border-border/50 bg-card/95 text-card-foreground shadow-2xl backdrop-blur-lg`}
+      } border-t border-border bg-card text-card-foreground shadow-2xl`}
       style={tooltipPositionStyle}
     >
       {isCompact && (
-        <div className="absolute left-1/2 top-2 -translate-x-1/2">
-          <span className="inline-flex h-1.5 w-12 rounded-full bg-muted/80" />
+        <div className="absolute left-1/2 top-3 -translate-x-1/2">
+          <span className="inline-flex h-1 w-12 rounded-full bg-border" />
         </div>
       )}
-      <button
-        type="button"
-        aria-label="Pular tutorial"
-        className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
-        onClick={onSkip}
-      >
-        <X className="h-4 w-4" />
-      </button>
-      <div className={isCompact ? "max-h-[55vh] overflow-y-auto pr-1 space-y-3 text-center sm:text-left" : "space-y-3"}>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-          Passo {stepIndex + 1} de {totalSteps}
-        </p>
-        <h2 className="text-lg font-semibold text-foreground">{step.title}</h2>
-        <p className="text-sm text-muted-foreground">{step.description}</p>
-        {!targetRect && (
-          <p className="text-xs text-amber-500">
-            Não encontramos esse ponto agora, mas guarde essa dica.
-          </p>
-        )}
+      
+      <div className={isCompact ? "space-y-4" : "space-y-3"}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              {stepIndex + 1}
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">
+              de {totalSteps}
+            </span>
+          </div>
+          <button
+            type="button"
+            aria-label="Pular tutorial"
+            className="rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={onSkip}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        
+        <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-muted">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-full flex-1 transition-all duration-300 ${
+                i <= stepIndex ? "bg-primary" : "bg-transparent"
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className={isCompact ? "space-y-3" : "space-y-2"}>
+          <h2 className="text-lg font-semibold leading-tight text-foreground">{step.title}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+          {!targetRect && (
+            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-500">
+              <span className="mt-0.5">ℹ️</span>
+              <span>Elemento não visível no momento, mas guarde essa dica.</span>
+            </div>
+          )}
+        </div>
       </div>
-      <div
-        className={`mt-5 flex ${
-          isCompact ? "flex-col gap-3" : "flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between"
-        }`}
-      >
-        {isCompact ? (
-          <>
-            <div className="flex w-full gap-2">
-              {!isFirstStep && (
-                <Button
-                  variant="outline"
-                  className="flex-1 h-12 text-base"
-                  onClick={onBack}
-                >
-                  Voltar
-                </Button>
-              )}
-              <Button className="flex-1 h-12 text-base" onClick={handlePrimaryAction}>
-                {primaryLabel}
-              </Button>
-            </div>
-            <button
-              type="button"
-              className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              onClick={onSkip}
-            >
-              Pular tutorial
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              onClick={onSkip}
-            >
-              Pular tutorial
-            </button>
-            <div className="flex w-full gap-2 sm:w-auto">
-              {!isFirstStep && (
-                <Button variant="outline" className="flex-1 sm:flex-none" onClick={onBack}>
-                  Voltar
-                </Button>
-              )}
-              <Button className="flex-1 sm:flex-none" onClick={handlePrimaryAction}>
-                {primaryLabel}
-              </Button>
-            </div>
-          </>
+      <div className={`flex gap-2 ${isCompact ? "mt-6" : "mt-4"}`}>
+        {!isFirstStep && (
+          <Button
+            variant="outline"
+            size={isCompact ? "lg" : "default"}
+            className={isCompact ? "h-12 flex-1 text-base font-medium" : "flex-1"}
+            onClick={onBack}
+          >
+            Voltar
+          </Button>
         )}
+        <Button
+          size={isCompact ? "lg" : "default"}
+          className={`${isCompact ? "h-12 text-base font-medium" : ""} ${isFirstStep ? "w-full" : "flex-1"}`}
+          onClick={handlePrimaryAction}
+        >
+          {primaryLabel}
+        </Button>
       </div>
     </div>
   );
 
   const highlight = highlightStyle ? (
     <div
-      className="pointer-events-none fixed z-[110] rounded-3xl border border-white/60 shadow-[0_0_0_9999px_rgba(7,11,20,0.75)] transition-all duration-300 ease-out"
+      className="pointer-events-none fixed z-[110] rounded-2xl border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] transition-all duration-300 ease-out"
       style={highlightStyle}
+      aria-hidden="true"
     />
   ) : null;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] pointer-events-none">
-      <div className="pointer-events-auto absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+      <div 
+        className="pointer-events-auto absolute inset-0 bg-background/85 backdrop-blur-sm transition-opacity duration-300" 
+        onClick={onSkip}
+        aria-hidden="true"
+      />
       {highlight}
       {tooltip}
     </div>,
