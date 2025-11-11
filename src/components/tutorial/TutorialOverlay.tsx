@@ -124,6 +124,11 @@ export const TutorialOverlay = ({
       } border border-border/50 bg-card/95 text-card-foreground shadow-2xl backdrop-blur-lg`}
       style={tooltipPositionStyle}
     >
+      {isCompact && (
+        <div className="absolute left-1/2 top-2 -translate-x-1/2">
+          <span className="inline-flex h-1.5 w-12 rounded-full bg-muted/80" />
+        </div>
+      )}
       <button
         type="button"
         aria-label="Pular tutorial"
@@ -132,16 +137,18 @@ export const TutorialOverlay = ({
       >
         <X className="h-4 w-4" />
       </button>
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-        Passo {stepIndex + 1} de {totalSteps}
-      </p>
-      <h2 className="mt-2 text-lg font-semibold text-foreground">{step.title}</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
-      {!targetRect && (
-        <p className="mt-3 text-xs text-amber-500">
-          Não encontramos esse ponto agora, mas guarde essa dica.
+      <div className={isCompact ? "max-h-[55vh] overflow-y-auto pr-1 space-y-3 text-center sm:text-left" : "space-y-3"}>
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+          Passo {stepIndex + 1} de {totalSteps}
         </p>
-      )}
+        <h2 className="text-lg font-semibold text-foreground">{step.title}</h2>
+        <p className="text-sm text-muted-foreground">{step.description}</p>
+        {!targetRect && (
+          <p className="text-xs text-amber-500">
+            Não encontramos esse ponto agora, mas guarde essa dica.
+          </p>
+        )}
+      </div>
       <div
         className={`mt-5 flex ${
           isCompact ? "flex-col gap-3" : "flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between"

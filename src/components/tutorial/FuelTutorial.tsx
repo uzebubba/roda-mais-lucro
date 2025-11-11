@@ -157,7 +157,8 @@ export const FuelTutorialProvider = ({ children }: { children: ReactNode }) => {
       setTargetRect(null);
       return;
     }
-    scrollElementIntoView(element);
+    const isCompact = window.innerWidth <= 520;
+    scrollElementIntoView(element, { bottomOffset: isCompact ? 320 : 80 });
     const rect = element.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
