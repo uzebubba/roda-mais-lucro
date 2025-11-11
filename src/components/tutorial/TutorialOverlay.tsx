@@ -62,16 +62,27 @@ export const TutorialOverlay = ({
       }
     : null;
 
+  // Para elementos na barra inferior (placement: "top"), mostrar tooltip acima
+  const isBottomNavElement = step.placement === "top" && targetRect && targetRect.top > viewportHeight * 0.75;
+  
   const tooltipPositionStyle = isCompact
-    ? {
-        position: "fixed" as const,
-        bottom: "0",
-        left: "0",
-        right: "0",
-        transform: "none",
-        borderRadius: "24px 24px 0 0",
-        maxHeight: "70vh",
-      }
+    ? isBottomNavElement
+      ? {
+          position: "fixed" as const,
+          bottom: `${viewportHeight - targetRect!.top + 20}px`,
+          left: "50%",
+          transform: "translateX(-50%)",
+          maxHeight: "60vh",
+        }
+      : {
+          position: "fixed" as const,
+          bottom: "0",
+          left: "0",
+          right: "0",
+          transform: "none",
+          borderRadius: "24px 24px 0 0",
+          maxHeight: "70vh",
+        }
     : targetRect
     ? {
         position: "fixed" as const,
@@ -103,9 +114,11 @@ export const TutorialOverlay = ({
       aria-label={step.title}
       className={`pointer-events-auto z-[120] ${
         isCompact
-          ? "w-full px-6 pb-8 pt-6 safe-area-inset-bottom"
-          : "w-[calc(100%-2rem)] max-w-sm rounded-2xl p-5"
-      } border-t border-border bg-card text-card-foreground shadow-2xl`}
+          ? isBottomNavElement
+            ? "w-[calc(100%-2rem)] max-w-md mx-auto rounded-2xl p-5 border border-border"
+            : "w-full px-6 pb-8 pt-6 safe-area-inset-bottom border-t border-border"
+          : "w-[calc(100%-2rem)] max-w-sm rounded-2xl p-5 border border-border"
+      } bg-card text-card-foreground shadow-2xl`}
       style={tooltipPositionStyle}
     >
       {isCompact && (
