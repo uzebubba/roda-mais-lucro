@@ -200,7 +200,7 @@ const Login = () => {
                   {mode === "login" ? <LogIn size={22} /> : <User size={22} />}
                 </div>
                 <CardTitle className="text-2xl font-semibold text-foreground">
-                  {mode === "login" ? "Acesse sua conta" : "Crie sua conta"}
+                  {mode === "login" ? "Acesse sua conta Bubba" : "Crie sua conta"}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {mode === "login"
