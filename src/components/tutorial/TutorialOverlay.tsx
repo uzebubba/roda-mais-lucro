@@ -180,7 +180,7 @@ export const TutorialOverlay = ({
 
   const highlight = highlightStyle ? (
     <div
-      className="pointer-events-none fixed z-[110] rounded-2xl border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] transition-all duration-300 ease-out"
+      className="pointer-events-none fixed z-[110] rounded-2xl border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.85),0_0_0_2px_rgba(var(--primary),0.5)] transition-all duration-300 ease-out"
       style={highlightStyle}
       aria-hidden="true"
     />
@@ -189,7 +189,7 @@ export const TutorialOverlay = ({
   return createPortal(
     <div className="fixed inset-0 z-[100] pointer-events-none">
       <div 
-        className="pointer-events-auto absolute inset-0 bg-background/85 backdrop-blur-sm transition-opacity duration-300" 
+        className="pointer-events-auto absolute inset-0 bg-black/75 transition-opacity duration-300" 
         onClick={onSkip}
         aria-hidden="true"
       />
