@@ -12,6 +12,7 @@ import {
   Fuel,
   Gauge,
   Droplet,
+  HelpCircle,
   Loader2,
   Mic,
   MicOff,
@@ -603,22 +604,32 @@ const Registrar = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="glass-card border-b border-border/50 px-4 py-4 flex items-center gap-3 animate-fade-in">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/")}
-          className="rounded-full hover:bg-accent"
-        >
-          <ArrowLeft size={20} />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            Combustível
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Registre abastecimentos e acompanhe o consumo.
-          </p>
+        <div className="flex flex-1 items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="rounded-full hover:bg-accent"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              Combustível
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Registre abastecimentos e acompanhe o consumo.
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => restartTutorial()}
+          aria-label="Rever tutorial de combustível"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-card/80 text-muted-foreground shadow-lg backdrop-blur transition hover:scale-105 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
