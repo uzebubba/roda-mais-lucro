@@ -264,7 +264,7 @@ const Fixas = () => {
         name,
         amount: parsedAmount,
         dueDay: parsedDay,
-        paid: false,
+        paid: true,
       });
       await queryClient.invalidateQueries({ queryKey: ["fixedExpenses"] });
       toast.success("Despesa fixa adicionada!");
@@ -426,7 +426,6 @@ const Fixas = () => {
                   id="amount"
                   type="text"
                   inputMode="decimal"
-                  pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
                   value={amount}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     setAmount(sanitizeCurrencyInput(event.target.value))
