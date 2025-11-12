@@ -47,19 +47,33 @@ export const TutorialOverlay = ({
 
   const isLastStep = stepIndex === totalSteps - 1;
   const isFirstStep = stepIndex === 0;
+  const isWelcomeStep = step.id === "welcome";
   const primaryLabel = isFirstStep ? "Começar" : isLastStep ? "Concluir" : "Próximo";
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const isCompact = viewportWidth <= 520;
-  const padding = 16;
+  const highlightPadding = isWelcomeStep ? (isCompact ? 8 : 12) : 16;
 
   const highlightStyle = targetRect
-    ? {
-        top: clamp(targetRect.top - padding, 8, viewportHeight - 8),
-        left: clamp(targetRect.left - padding, 8, viewportWidth - 8),
-        width: Math.min(targetRect.width + padding * 2, viewportWidth - 16),
-        height: targetRect.height + padding * 2,
-      }
+    ? (() => {
+        const maxHorizontalMargin = isWelcomeStep ? 24 : 16;
+        const highlightWidth = Math.min(
+          targetRect.width + highlightPadding * 2,
+          viewportWidth - maxHorizontalMargin,
+        );
+        const highlightHeight = targetRect.height + highlightPadding * 2;
+        const maxLeft = Math.max(8, viewportWidth - highlightWidth - 8);
+        const maxTop = Math.max(8, viewportHeight - highlightHeight - 8);
+        const baseLeft = isWelcomeStep
+          ? targetRect.left + targetRect.width / 2 - highlightWidth / 2
+          : targetRect.left - highlightPadding;
+        return {
+          top: clamp(targetRect.top - highlightPadding, 8, maxTop),
+          left: clamp(baseLeft, 8, maxLeft),
+          width: highlightWidth,
+          height: highlightHeight,
+        };
+      })()
     : null;
 
   // Para elementos na barra inferior (placement: "top"), mostrar tooltip acima
