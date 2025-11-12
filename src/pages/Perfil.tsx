@@ -4,7 +4,6 @@ import {
   Save,
   Megaphone,
   Loader2,
-  Sparkles,
   CarFront,
   Gift,
   CalendarClock,
@@ -228,6 +227,43 @@ const Perfil = () => {
 
   const handleProductNews = () => {
     setIsProductNewsOpen(true);
+  };
+
+  const handleShareNews = async () => {
+    const shareText =
+      "A Bubba está lançando a sincronização automática de ganhos e várias novidades feitas para motoristas. Bora testar?";
+    const shareUrl =
+      typeof window !== "undefined" ? window.location.origin : "https://bubbapp.com";
+
+    if (typeof navigator === "undefined") {
+      toast.info(`Copie e compartilhe: ${shareUrl}`);
+      return;
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Novidades da Bubba",
+          text: shareText,
+          url: shareUrl,
+        });
+        toast.success("Valeu por compartilhar a Bubba!");
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        toast.success("Texto copiado! É só colar e enviar.");
+        return;
+      }
+
+      toast.info(`Copie e compartilhe: ${shareUrl}`);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      toast.error("Não conseguimos compartilhar agora. Tente novamente.");
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -750,49 +786,77 @@ const Perfil = () => {
       </main>
 
       <Dialog open={isProductNewsOpen} onOpenChange={setIsProductNewsOpen}>
-        <DialogContent className="sm:max-w-[420px] border border-border/60 bg-gradient-to-b from-background via-background/95 to-background/90">
-          <DialogHeader className="space-y-3 text-left">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Sparkles size={22} />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold leading-tight">
-                  Novidades da Bubba
+        <DialogContent className="sm:max-w-[460px] border border-emerald-500/30 bg-[#021022] text-emerald-50 shadow-[0_45px_120px_-65px_rgba(16,185,129,0.9)]">
+          <div className="space-y-6">
+            <DialogHeader className="space-y-3 text-left">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-200">
+                <span role="img" aria-hidden>
+                  🚀
+                </span>
+                Novidades da Bubba
+              </p>
+              <div className="space-y-2">
+                <DialogTitle className="text-2xl font-semibold leading-tight text-emerald-50">
+                  A Bubba é o seu copiloto financeiro.
                 </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  Construído com quem vive o asfalto todos os dias.
+                <DialogDescription className="text-base leading-relaxed text-emerald-100/80">
+                  A gente entende cada corrida, cada minuto no trânsito e valoriza o seu tempo e o seu lucro.
                 </DialogDescription>
               </div>
+            </DialogHeader>
+
+            <div className="space-y-3 text-sm leading-relaxed text-emerald-50/90">
+              <p className="font-semibold text-emerald-100 uppercase tracking-wider text-xs">
+                Feita pra quem dirige de verdade
+              </p>
+              <p>
+                Estamos criando a ferramenta mais prática e inteligente de controle financeiro. Feita para o dia a dia real
+                dos motoristas, nada de planilhas frias ou complicadas.
+              </p>
             </div>
-          </DialogHeader>
-          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-            <p className="flex items-center gap-2 text-foreground font-medium">
-              <span role="img" aria-hidden>🚀</span>
-              Novidades da Bubba
-            </p>
-            <p>
-              A Bubba nasceu para ser o copiloto financeiro de quem move as cidades. A gente entende cada corrida,
-              cada hora no trânsito e valoriza seu tempo e lucro.
-            </p>
-            <p>
-              Por isso estamos construindo a ferramenta mais prática e inteligente de controle financeiro, feita para a
-              rotina real dos motoristas — não para planilhas frias.
-            </p>
-            <p>
-              Estamos finalizando a sincronização automática de ganhos para você abandonar anotações manuais e focar em
-              rodar com mais lucro e tranquilidade.
-            </p>
-            <p className="font-medium text-primary">
-              💚 O seu apoio é o combustível que move a Bubba: ao testar, dar feedback e compartilhar a Bubba,
-              você ajuda a construir um app de motorista pra motorista.
-            </p>
-            <p className="font-medium text-foreground">
-              Obrigado por rodar com a Bubba. Conte com a gente!
-            </p>
+
+            <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 p-5 text-white shadow-xl">
+              <div className="text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+                  Em breve
+                </p>
+                <p className="text-base font-semibold uppercase tracking-wide leading-tight text-white">
+                  Sincronização automática de ganhos
+                </p>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-white/90">
+                Chega de anotar tudo à mão. Nova sincronização para você focar em rodar com mais lucro e tranquilidade.
+              </p>
+            </div>
+
+            <div className="space-y-3 text-sm leading-relaxed text-emerald-50/90">
+              <p className="flex items-center gap-2 font-semibold text-emerald-300">
+                <span role="img" aria-hidden>
+                  💚
+                </span>
+                O seu apoio é o combustível da Bubba
+              </p>
+              <p>
+                Ao testar, dar feedback e compartilhar o app, você ajuda a construir uma ferramenta de motorista pra motorista.
+              </p>
+              <p className="font-medium text-emerald-50">
+                Obrigado por rodar com a Bubba. Conte com a gente na pista!
+              </p>
+            </div>
           </div>
-          <DialogFooter className="sm:justify-start">
-            <Button onClick={() => setIsProductNewsOpen(false)} className="w-full">
+
+          <DialogFooter className="mt-6 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Button
+              className="w-full bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+              onClick={handleShareNews}
+            >
+              Compartilhar
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full border border-emerald-500/30 bg-transparent text-emerald-200 hover:bg-emerald-500/10"
+              onClick={() => setIsProductNewsOpen(false)}
+            >
               Fechar
             </Button>
           </DialogFooter>
