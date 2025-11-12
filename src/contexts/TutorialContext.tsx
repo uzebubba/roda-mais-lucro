@@ -13,6 +13,8 @@ import {
 import { useLocation } from "react-router-dom";
 import { TutorialOverlay, type TutorialOverlayStep } from "@/components/tutorial/TutorialOverlay";
 import { scrollElementIntoView } from "@/lib/tutorial-helpers";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const STORAGE_KEY = "roda_plus_tutorial_state_v1";
 
@@ -167,6 +169,8 @@ const now = () => {
 
 export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const { subscribed, subscription_end } = useSubscription();
   const [steps] = useState(DEFAULT_STEPS);
   const [isOpen, setIsOpen] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -175,6 +179,25 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   const anchorsRef = useRef(new Map<TutorialAnchorId, HTMLElement>());
   const startTimeRef = useRef<number | null>(null);
   const hasAutostartedRef = useRef(false);
+  const isAuthenticated = Boolean(user?.id);
+
+  const trialDaysLeft = useMemo(() => {
+    if (!subscription_end) {
+      return null;
+    }
+    const diff = new Date(subscription_end).getTime() - Date.now();
+    if (!Number.isFinite(diff)) {
+      return null;
+    }
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }, [subscription_end]);
+
+  const isTrialUser = useMemo(() => {
+    if (!subscribed || typeof trialDaysLeft !== "number") {
+      return false;
+    }
+    return trialDaysLeft > 0 && trialDaysLeft <= 7;
+  }, [subscribed, trialDaysLeft]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -374,15 +397,19 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   }, [currentStepIndex, isOpen, steps]);
 
   useEffect(() => {
-    if (status !== "never" || isOpen || hasAutostartedRef.current) {
-      return;
-    }
-    if (location.pathname !== "/") {
+    if (
+      status !== "never" ||
+      isOpen ||
+      hasAutostartedRef.current ||
+      location.pathname !== "/" ||
+      !isAuthenticated ||
+      !isTrialUser
+    ) {
       return;
     }
     hasAutostartedRef.current = true;
     openTutorial();
-  }, [isOpen, location.pathname, openTutorial, status]);
+  }, [isAuthenticated, isOpen, isTrialUser, location.pathname, openTutorial, status]);
 
   const value = useMemo<TutorialContextValue>(
     () => ({
