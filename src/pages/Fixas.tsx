@@ -44,6 +44,9 @@ import {
   useFixedTutorialAnchor,
   useFixedTutorialControls,
 } from "@/components/tutorial/FixedTutorial";
+import { OilReminderCard } from "@/components/OilReminderCard";
+import { useOilReminderAlert } from "@/hooks/useOilReminderAlert";
+import { formatKm } from "@/lib/km";
 
 const sanitizeCurrencyInput = (value: string) => {
   if (!value) return "";
@@ -67,6 +70,15 @@ const parseCurrency = (value: string) => {
   const normalized = value.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
   const parsed = Number.parseFloat(normalized);
   return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const formatAmount = (value: number) => value.toFixed(2).replace(".", ",");
+
+const formatDate = (iso: string) => {
+  if (!iso) return "--";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "--";
+  return new Intl.DateTimeFormat("pt-BR").format(date);
 };
 
 const Fixas = () => {
@@ -196,6 +208,19 @@ const Fixas = () => {
     lastChangeKm: 0,
     lastChangeDate: "",
   } as OilReminderSettings);
+
+  const {
+    shouldShowReminderBanner,
+    reminderTitle,
+    reminderDescription,
+    handleSnoozeReminder,
+    clearReminderSnooze,
+  } = useOilReminderAlert({
+    currentKm: vehicle.currentKm,
+    intervalKm: oilSettings.intervalKm,
+    lastChangeKm: oilSettings.lastChangeKm,
+    autoToast: false,
+  });
 
   const loading =
     expensesQuery.isLoading || vehicleQuery.isLoading || oilSettingsQuery.isLoading;
@@ -327,6 +352,7 @@ const Fixas = () => {
       );
       queryClient.setQueryData(["oilSettings"], updated);
       setLastChangeInput(updated.lastChangeKm.toString());
+      clearReminderSnooze();
       toast.success("Troca de óleo registrada!");
     } catch (error) {
       const message =
@@ -335,19 +361,6 @@ const Fixas = () => {
           : "Não foi possível registrar a troca de óleo.";
       toast.error(message);
     }
-  };
-
-  const formatAmount = (value: number) =>
-    value.toFixed(2).replace(".", ",");
-
-  const formatKm = (value: number) =>
-    Math.abs(Math.round(value)).toLocaleString("pt-BR");
-
-  const formatDate = (iso: string) => {
-    if (!iso) return "--";
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "--";
-    return new Intl.DateTimeFormat("pt-BR").format(date);
   };
 
   const { nextChangeKm, kmSinceLast, kmRemaining, overdue, progressPercent } =
@@ -472,6 +485,16 @@ const Fixas = () => {
       </header>
 
       <main className="p-4 max-w-md mx-auto space-y-6">
+        {shouldShowReminderBanner && (
+          <OilReminderCard
+            title={reminderTitle}
+            description={reminderDescription}
+            onRegister={handleRegisterOilChange}
+            onSnooze={handleSnoozeReminder}
+            isRegistering={registerOilChangeMutation.isPending}
+          />
+        )}
+
         {/* Oil reminder */}
         <Card
           ref={maintenanceCardRef}

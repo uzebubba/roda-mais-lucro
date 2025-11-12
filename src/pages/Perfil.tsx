@@ -64,6 +64,7 @@ const Perfil = () => {
   const [isProductNewsOpen, setIsProductNewsOpen] = useState(false);
   const [subscriptionAction, setSubscriptionAction] = useState<"portal" | "cancel-trial" | null>(null);
   const [expandedPlan, setExpandedPlan] = useState<"monthly" | "annual" | null>(null);
+  const [isManageSubscriptionDialogOpen, setIsManageSubscriptionDialogOpen] = useState(false);
 
   const profile = profileQuery.data;
 
@@ -214,6 +215,15 @@ const Perfil = () => {
 
   const handleCancelTrial = () => {
     void openSubscriptionPortal("cancel-trial");
+  };
+
+  const handleManageSubscriptionClick = () => {
+    setIsManageSubscriptionDialogOpen(true);
+  };
+
+  const handleConfirmCancelSubscription = async () => {
+    await openSubscriptionPortal("portal");
+    setIsManageSubscriptionDialogOpen(false);
   };
 
   const handleGoToPlans = () => {
@@ -705,7 +715,7 @@ const Perfil = () => {
                 {subscribed ? (
                   <>
                     <Button
-                      onClick={handleSubscriptionPortal}
+                      onClick={handleManageSubscriptionClick}
                       disabled={subscriptionAction !== null}
                       variant="outline"
                       className="w-full sm:w-48"
@@ -784,6 +794,61 @@ const Perfil = () => {
           </Card>
         </div>
       </main>
+
+      <Dialog open={isManageSubscriptionDialogOpen} onOpenChange={setIsManageSubscriptionDialogOpen}>
+        <DialogContent className="sm:max-w-[420px] border border-emerald-500/30 bg-[#021022] text-emerald-50 shadow-[0_45px_120px_-65px_rgba(16,185,129,0.9)]">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-2xl font-semibold leading-tight text-emerald-50">
+              Cancelar assinatura Bubba
+            </DialogTitle>
+            <DialogDescription className="text-base leading-relaxed text-emerald-100/80">
+              Você pode encerrar sua assinatura online em poucos cliques. Vamos abrir o portal seguro da Bubba/Stripe.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm leading-relaxed text-emerald-50/90">
+            <p>
+              Ao confirmar, abriremos uma nova aba com o portal de cobrança para você finalizar o cancelamento. Seu acesso
+              permanece ativo até o fim do ciclo vigente, sem cobranças extras.
+            </p>
+            <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100">
+              Precisa de ajuda? Fale com a gente pelo WhatsApp sempre que precisar.
+            </div>
+            {nextBillingDate && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                <CalendarClock className="h-3.5 w-3.5" />
+                Próxima cobrança prevista para {nextBillingDate}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-6 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Button
+              variant="destructive"
+              className="w-full sm:flex-1"
+              onClick={handleConfirmCancelSubscription}
+              disabled={subscriptionAction === "portal"}
+            >
+              {subscriptionAction === "portal" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Abrindo portal...
+                </>
+              ) : (
+                "Cancelar assinatura"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full border border-emerald-500/30 bg-transparent text-emerald-200 hover:bg-emerald-500/10 sm:flex-1"
+              onClick={() => setIsManageSubscriptionDialogOpen(false)}
+              disabled={subscriptionAction === "portal"}
+            >
+              Continuar assinante
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isProductNewsOpen} onOpenChange={setIsProductNewsOpen}>
         <DialogContent className="sm:max-w-[460px] max-h-[90vh] overflow-y-auto border border-emerald-500/30 bg-[#021022] text-emerald-50 shadow-[0_45px_120px_-65px_rgba(16,185,129,0.9)]">

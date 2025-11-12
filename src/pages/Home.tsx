@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import TransactionForm from "@/components/TransactionForm";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
+import { OilReminderCard } from "@/components/OilReminderCard";
 import {
   Drawer,
   DrawerContent,
@@ -44,12 +45,17 @@ import {
   setMonthlyGoal as persistMonthlyGoal,
   getWorkSessions,
   getFixedExpenses,
+  getVehicleState,
+  getOilReminderSettings,
+  registerOilChange,
   type TodayStats,
   type WeeklyWorkSummary,
   type UserProfile,
   type WorkSession,
   type Transaction,
   type FixedExpense,
+  type VehicleState,
+  type OilReminderSettings,
 } from "@/lib/supabase-storage";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from "recharts";
 import { toast } from "sonner";
@@ -59,6 +65,7 @@ import { useTutorialAnchor } from "@/contexts/TutorialContext";
 import { useNavigate } from "react-router-dom";
 import { hasLegacyData } from "@/lib/local-migration";
 import { triggerEducationalTip } from "@/lib/educational-tips";
+import { useOilReminderAlert } from "@/hooks/useOilReminderAlert";
 
 const EMPTY_TRANSACTIONS: Transaction[] = [];
 
@@ -248,6 +255,20 @@ const Home = () => {
     retry: false,
   });
 
+  const vehicleQuery = useQuery({
+    queryKey: ["vehicleState"],
+    queryFn: getVehicleState,
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const oilSettingsQuery = useQuery({
+    queryKey: ["oilSettings"],
+    queryFn: getOilReminderSettings,
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   useEffect(() => {
     if (transactionsQuery.error) {
       const error = transactionsQuery.error;
@@ -293,6 +314,28 @@ const Home = () => {
   }, [fixedExpensesQuery.error]);
 
   useEffect(() => {
+    if (vehicleQuery.error) {
+      const error = vehicleQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar o estado do veículo.";
+      toast.error(message);
+    }
+  }, [vehicleQuery.error]);
+
+  useEffect(() => {
+    if (oilSettingsQuery.error) {
+      const error = oilSettingsQuery.error;
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar as configurações de manutenção.";
+      toast.error(message);
+    }
+  }, [oilSettingsQuery.error]);
+
+  useEffect(() => {
     if (!isAuthenticated || typeof window === "undefined") {
       setShowMigrationBanner(false);
       return;
@@ -303,11 +346,33 @@ const Home = () => {
   const transactions = transactionsQuery.data ?? EMPTY_TRANSACTIONS;
   const workSessions = workSessionsQuery.data ?? [];
   const userProfile = profileQuery.data;
+  const vehicle = vehicleQuery.data ?? ({
+    currentKm: 0,
+    lastUpdated: "",
+  } as VehicleState);
+  const oilSettings = oilSettingsQuery.data ?? ({
+    intervalKm: 5000,
+    lastChangeKm: 0,
+    lastChangeDate: "",
+  } as OilReminderSettings);
   const dueTodayExpenses = useMemo(() => {
     const expenses = fixedExpensesQuery.data ?? [];
     const today = new Date().getDate();
     return expenses.filter((expense) => !expense.paid && expense.dueDay === today);
   }, [fixedExpensesQuery.data]);
+
+  const {
+    shouldShowReminderBanner,
+    reminderTitle,
+    reminderDescription,
+    handleSnoozeReminder,
+    clearReminderSnooze,
+  } = useOilReminderAlert({
+    currentKm: vehicle.currentKm,
+    intervalKm: oilSettings.intervalKm,
+    lastChangeKm: oilSettings.lastChangeKm,
+    autoToast: true,
+  });
 
   const formatCurrency = useCallback(
     (value: number) =>
@@ -530,6 +595,10 @@ const Home = () => {
     mutationFn: persistMonthlyGoal,
   });
 
+  const registerOilChangeMutation = useMutation({
+    mutationFn: registerOilChange,
+  });
+
   const handleTransactionSaved = (transaction: Transaction) => {
     const previousTransactions =
       queryClient.getQueryData<Transaction[]>(["transactions"]) ?? [];
@@ -577,6 +646,28 @@ const Home = () => {
         toast.error(message);
       }
     })();
+  };
+
+  const handleRegisterOilChange = async () => {
+    if (!vehicle.currentKm || vehicle.currentKm <= 0) {
+      toast.error("Atualize o KM do veículo antes de registrar a troca.");
+      return;
+    }
+
+    try {
+      const updated = await registerOilChangeMutation.mutateAsync(
+        vehicle.currentKm,
+      );
+      queryClient.setQueryData(["oilSettings"], updated);
+      clearReminderSnooze();
+      toast.success("Troca de óleo registrada!");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível registrar a troca de óleo.";
+      toast.error(message);
+    }
   };
 
   const handleStartShift = () => {
@@ -743,6 +834,16 @@ const Home = () => {
               </ul>
             </div>
           </Card>
+        )}
+
+        {shouldShowReminderBanner && (
+          <OilReminderCard
+            title={reminderTitle}
+            description={reminderDescription}
+            onRegister={handleRegisterOilChange}
+            onSnooze={handleSnoozeReminder}
+            isRegistering={registerOilChangeMutation.isPending}
+          />
         )}
 
         <div ref={summaryAnchorRef} className="grid grid-cols-3 gap-3 animate-fade-in">
