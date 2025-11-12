@@ -268,11 +268,6 @@ const Login = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                      {mode === "login" && (
-                        <Link to="#" className="text-xs font-medium text-primary hover:underline">
-                          Esqueci minha senha
-                        </Link>
-                      )}
                     </div>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
