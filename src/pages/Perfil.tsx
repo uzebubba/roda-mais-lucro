@@ -815,16 +815,16 @@ const Perfil = () => {
               </p>
             </div>
 
-            <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 p-5 text-white shadow-xl">
-              <div className="text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+            <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 px-4 py-5 text-white shadow-xl">
+              <div className="text-center space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
                   Em breve
                 </p>
                 <p className="text-base font-semibold uppercase tracking-wide leading-tight text-white">
                   Sincronização automática de ganhos
                 </p>
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-white/90">
+              <p className="mt-2 text-sm leading-relaxed text-white/90">
                 Chega de anotar tudo à mão. Nova sincronização para você focar em rodar com mais lucro e tranquilidade.
               </p>
             </div>

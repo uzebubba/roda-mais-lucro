@@ -657,18 +657,8 @@ const Registrar = () => {
                 </h2>
               </div>
               </div>
-              <div className="flex flex-col items-end gap-2 text-right">
-                <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  {mode === "automatic" ? "Modo automático" : "Modo manual"}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto px-2 py-1 text-xs text-muted-foreground hover:text-primary"
-                  onClick={() => restartTutorial()}
-                >
-                  Ver tutorial
-                </Button>
+              <div className="flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                {mode === "automatic" ? "Modo automático" : "Modo manual"}
               </div>
             </div>
 
