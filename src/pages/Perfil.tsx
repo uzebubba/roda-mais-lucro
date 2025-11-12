@@ -786,8 +786,8 @@ const Perfil = () => {
       </main>
 
       <Dialog open={isProductNewsOpen} onOpenChange={setIsProductNewsOpen}>
-        <DialogContent className="sm:max-w-[460px] border border-emerald-500/30 bg-[#021022] text-emerald-50 shadow-[0_45px_120px_-65px_rgba(16,185,129,0.9)]">
-          <div className="space-y-6">
+        <DialogContent className="sm:max-w-[460px] max-h-[90vh] overflow-y-auto border border-emerald-500/30 bg-[#021022] text-emerald-50 shadow-[0_45px_120px_-65px_rgba(16,185,129,0.9)]">
+          <div className="space-y-6 px-1 sm:px-0">
             <DialogHeader className="space-y-3 text-left">
               <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-200">
                 <span role="img" aria-hidden>
@@ -816,15 +816,15 @@ const Perfil = () => {
             </div>
 
             <div className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 px-4 py-5 text-white shadow-xl">
-              <div className="space-y-1 text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+              <div className="space-y-1 text-left sm:text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/80">
                   Em breve
                 </p>
-                <p className="text-base font-semibold uppercase tracking-wide leading-tight text-white px-2">
+                <p className="text-base font-semibold uppercase tracking-wide leading-tight text-white sm:px-2">
                   Sincronização automática de ganhos
                 </p>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-white/90 text-center max-w-sm mx-auto">
+              <p className="mt-2 text-sm leading-relaxed text-white/90 text-left sm:text-center sm:max-w-sm sm:mx-auto">
                 Chega de anotar tudo à mão. Nova sincronização para você focar em rodar com mais lucro e tranquilidade.
               </p>
             </div>
