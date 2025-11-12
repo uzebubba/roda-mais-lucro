@@ -623,7 +623,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur">
+      <header className="z-10">
         <div className="relative mx-auto w-full max-w-md px-4 py-3.5">
           <div
             ref={welcomeAnchorRef}
@@ -650,7 +650,7 @@ const Home = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-md space-y-5 px-4 pt-[118px] pb-6">
+      <main className="mx-auto max-w-md space-y-5 px-4 pb-6 pt-4">
         {showMigrationBanner && (
           <div className="flex flex-col gap-3 rounded-2xl border border-yellow-400/40 bg-yellow-50/80 px-4 py-3 text-yellow-900 shadow-sm">
             <div className="flex items-start gap-3">
