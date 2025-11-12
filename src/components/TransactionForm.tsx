@@ -333,7 +333,6 @@ const TransactionForm = ({
               id="amount"
               type="text"
               inputMode="decimal"
-              pattern="^\\d+(?:[\\.,]\\d{0,2})?$"
               placeholder="0,00"
               value={amount}
               onChange={handleAmountChange}

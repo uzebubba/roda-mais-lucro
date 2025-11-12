@@ -623,8 +623,8 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-10">
-        <div className="relative mx-auto w-full max-w-md px-4 py-4">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur">
+        <div className="relative mx-auto w-full max-w-md px-4 py-3.5">
           <div
             ref={welcomeAnchorRef}
             className="relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-primary/15 via-card/95 to-background px-4 py-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.85)]"
@@ -650,7 +650,7 @@ const Home = () => {
         </div>
       </header>
 
-      <main className="p-4 space-y-6 max-w-md mx-auto">
+      <main className="mx-auto max-w-md space-y-5 px-4 pt-[118px] pb-6">
         {showMigrationBanner && (
           <div className="flex flex-col gap-3 rounded-2xl border border-yellow-400/40 bg-yellow-50/80 px-4 py-3 text-yellow-900 shadow-sm">
             <div className="flex items-start gap-3">
