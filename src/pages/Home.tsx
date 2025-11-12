@@ -627,22 +627,24 @@ const Home = () => {
         ref={welcomeAnchorRef}
         className="border-b border-border/30 bg-card/50 backdrop-blur-sm sticky top-0 z-10"
       >
-        <div className="mx-auto w-full max-w-md px-4 py-4 relative">
-          <TutorialHelpButton className="absolute right-4 top-3 sm:top-4" />
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
+        <div className="mx-auto w-full max-w-md px-4 py-4">
+          <div className="flex items-start gap-3">
+            <div className="flex flex-1 items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
+                <Wallet className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base font-semibold text-foreground truncate">
+                  {greetingParts.before}
+                  <span className="text-primary">{displayName}</span>
+                  {greetingParts.after}
+                </h1>
+                <p className="text-xs text-muted-foreground truncate">
+                  Seu controle financeiro inteligente
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base font-semibold text-foreground truncate">
-                {greetingParts.before}
-                <span className="text-primary">{displayName}</span>
-                {greetingParts.after}
-              </h1>
-              <p className="text-xs text-muted-foreground truncate">
-                Seu controle financeiro inteligente
-              </p>
-            </div>
+            <TutorialHelpButton className="shrink-0" />
           </div>
         </div>
       </header>
