@@ -623,27 +623,30 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header
-        ref={welcomeAnchorRef}
-        className="border-b border-border/30 bg-card/50 backdrop-blur-sm sticky top-0 z-10"
-      >
-        <div className="mx-auto w-full max-w-md px-4 py-4 relative">
-          <TutorialHelpButton className="absolute right-4 top-3 sm:top-4" />
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base font-semibold text-foreground truncate">
-                {greetingParts.before}
-                <span className="text-primary">{displayName}</span>
-                {greetingParts.after}
-              </h1>
-              <p className="text-xs text-muted-foreground truncate">
-                Seu controle financeiro inteligente
-              </p>
+      <header className="sticky top-0 z-10">
+        <div className="relative mx-auto w-full max-w-md px-4 py-4">
+          <div
+            ref={welcomeAnchorRef}
+            className="relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-primary/15 via-card/95 to-background px-4 py-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.85)]"
+          >
+            <div className="pointer-events-none absolute inset-0 rounded-3xl opacity-70 bg-gradient-to-br from-primary/20 via-transparent to-transparent" />
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg ring-1 ring-primary/40">
+                <Wallet className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <h1 className="text-base font-semibold text-foreground truncate">
+                  {greetingParts.before}
+                  <span className="text-primary">{displayName}</span>
+                  {greetingParts.after}
+                </h1>
+                <p className="text-xs text-muted-foreground truncate">
+                  Seu controle financeiro inteligente
+                </p>
+              </div>
             </div>
           </div>
+          <TutorialHelpButton className="absolute right-4 top-4 z-20" />
         </div>
       </header>
 
