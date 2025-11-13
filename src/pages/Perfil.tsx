@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getUserProfile, updateUserProfile } from "@/lib/supabase-storage";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,6 +66,7 @@ const Perfil = () => {
   const [expandedPlan, setExpandedPlan] = useState<"monthly" | "annual" | null>(null);
   const [isManageSubscriptionDialogOpen, setIsManageSubscriptionDialogOpen] = useState(false);
   const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
+  const hasShownLastDayCouponToast = useRef(false);
 
   const profile = profileQuery.data;
 
@@ -99,6 +100,8 @@ const Perfil = () => {
     subscribed && typeof trialDaysLeft === "number" && trialDaysLeft > 0 && trialDaysLeft <= 7;
 
   const trialCountdown = trialDaysLeft ?? 0;
+  const isLastTrialDay = isTrialWindow && trialDaysLeft === 1;
+  const lastDayCouponCode = "BUBBA50";
 
   const isMonthlyActive = subscribed && activePriceId === SUBSCRIPTION_TIERS.MENSAL.price_id;
   const isAnnualActive = subscribed && activePriceId === SUBSCRIPTION_TIERS.ANUAL.price_id;
@@ -125,6 +128,15 @@ const Perfil = () => {
   const updateProfileMutation = useMutation({
     mutationFn: updateUserProfile,
   });
+
+  useEffect(() => {
+    if (isLastTrialDay && !hasShownLastDayCouponToast.current) {
+      toast.info(
+        "Hoje é o último dia do seu teste gratuito! Use o cupom BUBBA50 e garanta 50% OFF na primeira cobrança."
+      );
+      hasShownLastDayCouponToast.current = true;
+    }
+  }, [isLastTrialDay]);
 
   useEffect(() => {
     if (!profile || updateProfileMutation.isPending) {
@@ -287,6 +299,20 @@ const Perfil = () => {
     } finally {
       setIsCancelingSubscription(false);
     }
+  };
+
+  const handleCopyCouponCode = async () => {
+    const fallbackMessage = `Use o cupom ${lastDayCouponCode} e aproveite 50% OFF.`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(lastDayCouponCode);
+        toast.success(`Cupom ${lastDayCouponCode} copiado!`);
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to copy coupon code", error);
+    }
+    toast.info(fallbackMessage);
   };
 
   const handleGoToPlans = () => {
@@ -774,6 +800,34 @@ const Perfil = () => {
                   )}
                 </div>
               </div>
+              {isLastTrialDay && (
+                <div className="mt-4 rounded-3xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-sm text-emerald-50 shadow-inner">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-emerald-100">
+                      <Megaphone className="h-4 w-4 text-emerald-200" />
+                      <span className="font-semibold">Último dia de teste gratuito</span>
+                    </div>
+                    <p className="text-emerald-100/90">
+                      Garanta 50% OFF no primeiro mês usando o cupom{" "}
+                      <span className="font-semibold text-emerald-50">{lastDayCouponCode}</span> no checkout.
+                      Aproveite antes que o teste termine!
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button className="w-full sm:flex-1" onClick={handleGoToPlans}>
+                        Usar cupom agora
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/10 sm:flex-1"
+                        onClick={handleCopyCouponCode}
+                      >
+                        Copiar código
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
                 {subscribed ? (
                   <>
