@@ -14,6 +14,8 @@ const logStep = (step: string, details?: LogDetails) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+const DEFAULT_PROMOTION_CODE_ID = Deno.env.get("STRIPE_PROMOTION_CODE_ID") ?? "promo_1ST6zDCOuTerzWXrrNqXWMLv";
+
 const resolveOrigin = (req: Request) => {
   const headerOrigin = req.headers.get("origin");
   if (headerOrigin && headerOrigin !== "null") {
@@ -63,7 +65,14 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const body = await req.json();
-    const { priceId, successUrl: requestedSuccessUrl, cancelUrl: requestedCancelUrl } = body ?? {};
+    const {
+      priceId,
+      successUrl: requestedSuccessUrl,
+      cancelUrl: requestedCancelUrl,
+      applyPromotionAutomatically = false,
+      allowPromotionCodes = true,
+      promotionCodeId,
+    } = body ?? {};
     if (!priceId) throw new Error("priceId is required");
     logStep("Price ID received", { priceId });
 
@@ -89,6 +98,30 @@ serve(async (req) => {
           },
         }
       : undefined;
+    const resolvedPromotionCode = promotionCodeId ?? DEFAULT_PROMOTION_CODE_ID ?? null;
+    const promotionParams = (() => {
+      const discounts =
+        applyPromotionAutomatically && resolvedPromotionCode
+          ? [
+              {
+                promotion_code: resolvedPromotionCode,
+              },
+            ]
+          : undefined;
+
+      if (allowPromotionCodes) {
+        return {
+          allow_promotion_codes: true,
+          ...(discounts ? { discounts } : {}),
+        };
+      }
+
+      if (discounts) {
+        return { discounts };
+      }
+
+      return undefined;
+    })();
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -103,6 +136,7 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       ...trialingParams,
+      ...(promotionParams ?? {}),
     });
     logStep("Checkout session created", {
       sessionId: session.id,
@@ -110,6 +144,8 @@ serve(async (req) => {
       successUrl,
       cancelUrl,
       eligibleForTrial,
+      allowPromotionCodes,
+      promotionApplied: applyPromotionAutomatically && Boolean(resolvedPromotionCode),
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

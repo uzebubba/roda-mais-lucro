@@ -65,6 +65,7 @@ const Perfil = () => {
   const [subscriptionAction, setSubscriptionAction] = useState<"portal" | "cancel-trial" | null>(null);
   const [expandedPlan, setExpandedPlan] = useState<"monthly" | "annual" | null>(null);
   const [isManageSubscriptionDialogOpen, setIsManageSubscriptionDialogOpen] = useState(false);
+  const [isCancelingSubscription, setIsCancelingSubscription] = useState(false);
 
   const profile = profileQuery.data;
 
@@ -221,9 +222,71 @@ const Perfil = () => {
     setIsManageSubscriptionDialogOpen(true);
   };
 
-  const handleConfirmCancelSubscription = async () => {
-    await openSubscriptionPortal("portal");
-    setIsManageSubscriptionDialogOpen(false);
+  const handleCancelSubscriptionDirect = async () => {
+    setIsCancelingSubscription(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Você precisa estar logado para cancelar sua assinatura.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke<{
+        canceled?: boolean;
+        immediate?: boolean;
+        cancel_at?: string | null;
+        error?: string;
+      }>("cancel-subscription", {
+        body: { immediate: isTrialWindow },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message ?? "Não foi possível cancelar a assinatura.");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.canceled) {
+        throw new Error("cancel-failed");
+      }
+
+      if (data.immediate) {
+        toast.success("Teste gratuito cancelado. Você pode voltar quando quiser!");
+      } else {
+        const formattedDate = data.cancel_at
+          ? new Date(data.cancel_at).toLocaleDateString("pt-BR")
+          : "o fim do período";
+        toast.success(`Cancelamento confirmado. Você terá acesso até ${formattedDate}.`);
+      }
+
+      await checkSubscription();
+      setIsManageSubscriptionDialogOpen(false);
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      const message = error instanceof Error ? error.message : "";
+      const normalizedMessage = message.toLowerCase();
+
+      if (normalizedMessage.includes("no active subscription")) {
+        toast.error("Você não tem assinatura ativa para cancelar.");
+      } else if (normalizedMessage.includes("no stripe customer")) {
+        toast.error("Erro ao localizar sua assinatura. Entre em contato.");
+      } else if (normalizedMessage.includes("authentication") || normalizedMessage.includes("authorization")) {
+        toast.error("Você precisa estar logado para cancelar sua assinatura.");
+      } else if (normalizedMessage.includes("fetch") || normalizedMessage.includes("network")) {
+        toast.error("Erro de conexão. Tente novamente.");
+      } else if (normalizedMessage === "cancel-failed") {
+        toast.error("Não foi possível cancelar. Entre em contato via WhatsApp.");
+      } else {
+        toast.error("Não foi possível cancelar. Entre em contato via WhatsApp.");
+      }
+    } finally {
+      setIsCancelingSubscription(false);
+    }
   };
 
   const handleGoToPlans = () => {
@@ -802,14 +865,18 @@ const Perfil = () => {
               Cancelar assinatura Bubba
             </DialogTitle>
             <DialogDescription className="text-base leading-relaxed text-emerald-100/80">
-              Você pode encerrar sua assinatura online em poucos cliques. Vamos abrir o portal seguro da Bubba/Stripe.
+              {isTrialWindow
+                ? "Seu teste gratuito será cancelado imediatamente. Você pode voltar e assinar quando quiser!"
+                : "Sua assinatura será cancelada ao fim do período atual. Você manterá acesso até lá sem cobranças extras."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 text-sm leading-relaxed text-emerald-50/90">
             <p>
-              Ao confirmar, abriremos uma nova aba com o portal de cobrança para você finalizar o cancelamento. Seu acesso
-              permanece ativo até o fim do ciclo vigente, sem cobranças extras.
+              Ao confirmar, faremos o cancelamento com segurança direto aqui no app.{" "}
+              {isTrialWindow
+                ? "Para testes gratuitos, o acesso é encerrado na hora e nenhuma cobrança é realizada."
+                : "Em assinaturas ativas, você continuará com acesso até o fim do ciclo vigente, sem novas cobranças."}
             </p>
             <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100">
               Precisa de ajuda? Fale com a gente pelo WhatsApp sempre que precisar.
@@ -826,13 +893,13 @@ const Perfil = () => {
             <Button
               variant="destructive"
               className="w-full sm:flex-1"
-              onClick={handleConfirmCancelSubscription}
-              disabled={subscriptionAction === "portal"}
+              onClick={handleCancelSubscriptionDirect}
+              disabled={isCancelingSubscription}
             >
-              {subscriptionAction === "portal" ? (
+              {isCancelingSubscription ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Abrindo portal...
+                  Cancelando...
                 </>
               ) : (
                 "Cancelar assinatura"
@@ -842,7 +909,7 @@ const Perfil = () => {
               variant="ghost"
               className="w-full border border-emerald-500/30 bg-transparent text-emerald-200 hover:bg-emerald-500/10 sm:flex-1"
               onClick={() => setIsManageSubscriptionDialogOpen(false)}
-              disabled={subscriptionAction === "portal"}
+              disabled={isCancelingSubscription}
             >
               Continuar assinante
             </Button>
